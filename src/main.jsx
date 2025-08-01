@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx"; // 확장자 맞춰서
+import App from "./App.jsx";
+import "./index.css"; 
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
