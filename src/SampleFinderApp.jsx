@@ -165,7 +165,7 @@ export default function SampleFinderApp() {
                                 className="w-32 h-32 rounded-xl object-cover shadow-xl" 
                               />
                               <div>
-                                <h3 className="text-xl font-bold text-white">New Song</h3>
+                                <h3 className="text-xl font-bold text-white">ampled Song</h3>
                                 <p className="text-lg text-gray-300">{item.title} - {item.artist}</p>
                                 <p className="text-sm text-gray-500">{item.year}</p>
                               </div>
@@ -179,7 +179,7 @@ export default function SampleFinderApp() {
                                 className="w-32 h-32 rounded-xl object-cover shadow-xl" 
                               />
                               <div>
-                                <h3 className="text-xl font-bold text-white">Original Song</h3>
+                                <h3 className="text-xl font-bold text-white">Sample Source</h3>
                                 <p className="text-lg text-gray-300">{item.sampledFrom.title} - {item.sampledFrom.artist}</p>
                                 <p className="text-sm text-gray-500">{item.sampledFrom.year}</p>
                               </div>
@@ -190,7 +190,7 @@ export default function SampleFinderApp() {
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Left Side - New Song Video */}
                             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-                              <h3 className="text-lg font-semibold text-gray-300 mb-4">New Song</h3>
+                              <h3 className="text-lg font-semibold text-gray-300 mb-4">ampled Song</h3>
                               <div className="aspect-video rounded-lg overflow-hidden">
                                 <iframe
                                   width="100%"
@@ -207,7 +207,7 @@ export default function SampleFinderApp() {
 
                             {/* Right Side - Original Song Video */}
                             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-                              <h3 className="text-lg font-semibold text-gray-300 mb-4">Original Song</h3>
+                              <h3 className="text-lg font-semibold text-gray-300 mb-4">Sample Source</h3>
                               <div className="aspect-video rounded-lg overflow-hidden">
                                 <iframe
                                   width="100%"
