@@ -20,6 +20,7 @@ export default function SampleFinderApp() {
   const [spotifyCovers, setSpotifyCovers] = useState({}); // key: `${title}|${artist}` -> album image url
   const [spotifyInfo, setSpotifyInfo] = useState({}); // key -> { title, artists, year, coverUrl }
   const [dominantColors, setDominantColors] = useState({}); // key -> { r,g,b }
+  const [genrePool, setGenrePool] = useState([]); // unique list of genres from Spotify
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
   const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '')));
@@ -104,8 +105,9 @@ export default function SampleFinderApp() {
         const artists = (json?.track?.artists || []).map((a) => a.name);
         const year = json?.track?.year || '';
         const coverUrl = json?.track?.album?.images?.[0]?.url || '';
-        if (trackTitle || artists.length || year || coverUrl) {
-          return { title: trackTitle, artists, year, coverUrl };
+        const genres = json?.artist?.genres || [];
+        if (trackTitle || artists.length || year || coverUrl || genres.length) {
+          return { title: trackTitle, artists, year, coverUrl, genres };
         }
       } catch (_) {
         // try next
@@ -183,6 +185,18 @@ export default function SampleFinderApp() {
         }
         if (Object.keys(infoUpdates).length > 0) {
           setSpotifyInfo((prev) => ({ ...prev, ...infoUpdates }));
+          // merge genres into pool
+          const incoming = Object.values(infoUpdates)
+            .flatMap((i) => (i.genres || []))
+            .map((g) => String(g))
+            .filter((g) => g.length > 0);
+          if (incoming.length > 0) {
+            setGenrePool((prev) => {
+              const set = new Set(prev);
+              incoming.forEach((g) => set.add(g));
+              return Array.from(set).slice(0, 24); // cap to 24 for UI
+            });
+          }
         }
         if (Object.keys(colorUpdates).length > 0) {
           setDominantColors((prev) => ({ ...prev, ...colorUpdates }));
@@ -328,57 +342,101 @@ export default function SampleFinderApp() {
 
       {/* Centered content container */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-8">
-                            {/* Large Typography Title */}
-                    <div className="text-left mb-16 max-w-6xl">
-                      <h1 className="text-8xl font-bitcount font-semibold text-white/90 leading-none tracking-tight">
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '0s' }}>s</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '0.3s' }}>a</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '0.6s' }}>m</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '0.9s' }}>p</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '1.2s' }}>l</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '1.5s' }}>e</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '1.8s' }}> </span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '2.1s' }}>f</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '2.4s' }}>i</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '2.7s' }}>n</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '3s' }}>d</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '3.3s' }}>e</span>
-                        <span className="inline-block animate-textGlow" style={{ animationDelay: '3.6s' }}>r</span>
-                      </h1>
-                      <p className="text-white/60 text-sm font-light mt-4 text-center">
-                        Find out who sampled this beat
-                      </p>
-                      
-
-                    </div>
-
-                            {/* Unified Search Form */}
-                    <div className="w-full max-w-3xl mb-16 lg:mb-24">
-                      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-8">
-                        <div className="flex-1 relative">
-        <input
-          type="text"
-          placeholder="Type a song title..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-                            className="w-full px-6 py-4 bg-transparent text-white text-lg font-inter font-light border-b border-white/20 focus:outline-none focus:border-white/40 placeholder-gray-400/60 transition-all duration-500"
-                          />
+                    {results.length === 0 ? (
+                      <>
+                        {/* Large Typography Title */}
+                        <div className="text-left mb-16 max-w-6xl">
+                          <h1 className="text-8xl font-bitcount font-semibold text-white/90 leading-none tracking-tight">
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '0s' }}>s</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '0.3s' }}>a</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '0.6s' }}>m</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '0.9s' }}>p</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '1.2s' }}>l</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '1.5s' }}>e</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '1.8s' }}> </span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.1s' }}>f</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.4s' }}>i</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.7s' }}>n</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3s' }}>d</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3.3s' }}>e</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3.6s' }}>r</span>
+                          </h1>
+                          <p className="text-white/60 text-sm font-light mt-4 text-center">
+                            Find out who sampled this beat
+                          </p>
                         </div>
-                        <button 
-                          type="submit" 
-                          className="px-6 py-4 bg-white/3 backdrop-blur-sm text-white/80 font-inter font-light border border-white/8 hover:bg-white/8 hover:border-white/15 hover:text-white transition-all duration-500"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-        </button>
-      </form>
-        {results.length === 0 && (
-                        <p className="text-white/40 text-xs text-center mt-3 font-inter font-light">
-                          Try: "She Knows"
-                        </p>
-        )}
-                    </div>
+
+                        {/* Unified Search Form (Hero) */}
+                        <div className="w-full max-w-3xl mb-16 lg:mb-24">
+                          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-4">
+                            <div className="flex-1 relative">
+                              <input
+                                type="text"
+                                placeholder="Type a song title..."
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="w-full px-6 py-4 bg-transparent text-white text-lg font-inter font-light border-b border-white/20 focus:outline-none focus:border-white/40 placeholder-gray-400/60 transition-all duration-500"
+                              />
+                            </div>
+                            <button 
+                              type="submit" 
+                              className="px-6 py-4 bg-white/3 backdrop-blur-sm text-white/80 font-inter font-light border border-white/8 hover:bg-white/8 hover:border-white/15 hover:text-white transition-all duration-500"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            </button>
+                          </form>
+                          {/* Genre quick filters (from Spotify) */}
+                          {genrePool.length > 0 && (
+                            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                              {genrePool.slice(0, 18).map((g, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setQuery(g);
+                                    // submit search for this genre
+                                    const fakeEvent = { preventDefault: () => {} };
+                                    handleSearch(fakeEvent);
+                                  }}
+                                  className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-white/10 border border-white/12 text-white/85 hover:text-white transition-colors"
+                                >
+                                  {g}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      /* Full-bleed header divider across the entire viewport */
+                      <div className="relative w-full bg-transparent mb-12">
+                        <div className="absolute bottom-0 h-px bg-white/10 pointer-events-none" style={{ left: 'calc(-50vw + 50%)', right: 'calc(-50vw + 50%)' }}></div>
+                        <div className="max-w-7xl mx-auto px-6 py-6 md:py-8 flex items-center gap-6">
+                          <div className="font-bitcount text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 tracking-tight lg:tracking-normal leading-[1.35] whitespace-nowrap">sample finder</div>
+                          <form onSubmit={handleSearch} className="flex-1">
+                            <div className="flex gap-3 items-center">
+                              <input
+                                type="text"
+                                placeholder="Search songs..."
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="w-full px-5 py-3 bg-transparent text-white text-base font-inter font-light border-b border-white/25 focus:outline-none focus:border-white/40 placeholder-gray-400/60 transition-all duration-500"
+                              />
+                              <button 
+                                type="submit" 
+                                className="px-4 py-3 bg-white/3 backdrop-blur-sm text-white/80 font-inter font-light border border-white/10 hover:bg-white/8 hover:border-white/20 hover:text-white transition-all duration-500"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
 
                                                                     {/* Results container */}
                     <div className="w-full max-w-7xl">
