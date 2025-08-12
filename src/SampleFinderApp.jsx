@@ -412,7 +412,7 @@ export default function SampleFinderApp() {
                                   }}
                                   className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-gradient-to-b from-transparent via-white/5 to-transparent border border-white/12 text-white/85 hover:text-white transition-colors"
                                 >
-                                  {g}
+                                  {g.charAt(0).toUpperCase() + g.slice(1)}
                                 </button>
                               ))}
                             </div>

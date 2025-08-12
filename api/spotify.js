@@ -19,12 +19,21 @@ function setCached(key, data) {
   responseCache.set(key, { data, expires: Date.now() + RESPONSE_TTL_MS });
 }
 
-function truncateBio(text) {
+function formatBio(text) {
   if (!text) return null;
-  // keep first sentence; fallback to 280 chars
-  const firstSentence = text.split(/(?<=\.)\s/)[0] || text;
-  const trimmed = firstSentence.length > 280 ? firstSentence.slice(0, 277) + '...' : firstSentence;
-  return trimmed;
+  // Return full text, but limit to reasonable length for UI
+  const maxLength = 800; // Increased from 280 to show more content
+  if (text.length <= maxLength) return text;
+  
+  // Try to break at sentence boundary
+  const sentences = text.split(/(?<=\.)\s/);
+  let result = '';
+  for (const sentence of sentences) {
+    if ((result + sentence).length > maxLength) break;
+    result += (result ? ' ' : '') + sentence;
+  }
+  
+  return result || text.slice(0, maxLength - 3) + '...';
 }
 
 async function fetchWithTimeout(url, opts = {}, timeoutMs = 1000) {
@@ -123,13 +132,41 @@ export default async function handler(req, res) {
           const name = artistNameFromTrack;
           if (!name) return { bio: null, url: null };
           const title = encodeURIComponent(name);
-          const w = await fetchWithTimeout(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {}, 1000);
-          if (!w.ok) return { bio: null, url: null };
-          const wData = await w.json();
-          return {
-            bio: truncateBio(wData?.extract || ''),
-            url: wData?.content_urls?.desktop?.page || null,
-          };
+          
+          // Try to get full page content first, fallback to summary
+          let bio = null;
+          let url = null;
+          
+          try {
+            // Try full page content
+            const wFull = await fetchWithTimeout(`https://en.wikipedia.org/w/api.php?action=query&format=json&titles=${title}&prop=extracts&exintro=0&explaintext=1&exsectionformat=plain&origin=*`, {}, 2000);
+            if (wFull.ok) {
+              const wFullData = await wFull.json();
+              const pages = wFullData?.query?.pages;
+              if (pages) {
+                const pageId = Object.keys(pages)[0];
+                const pageData = pages[pageId];
+                if (pageData && !pageData.missing && pageData.extract) {
+                  bio = formatBio(pageData.extract);
+                  url = `https://en.wikipedia.org/wiki/${title}`;
+                }
+              }
+            }
+          } catch (e) {
+            console.log('Full page fetch failed, trying summary:', e.message);
+          }
+          
+          // Fallback to summary if full page failed
+          if (!bio) {
+            const w = await fetchWithTimeout(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {}, 1000);
+            if (w.ok) {
+              const wData = await w.json();
+              bio = formatBio(wData?.extract || '');
+              url = wData?.content_urls?.desktop?.page || null;
+            }
+          }
+          
+          return { bio, url };
         } catch {
           return { bio: null, url: null };
         }
