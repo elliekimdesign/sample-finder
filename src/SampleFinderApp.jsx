@@ -356,11 +356,34 @@ export default function SampleFinderApp() {
         try {
           console.log('🎵 Fetching panel Spotify data for:', panelData.title, panelData.artist);
           console.log('🔗 API Base URL:', apiBase);
+          
+          // First try the main API 
           const info = await resolveSpotifyInfo(panelData.title, panelData.artist);
           if (info) {
             console.log('✅ Panel Spotify data received:', info);
             console.log('🖼️ Artist images available:', info.artist?.images?.length || 0);
             console.log('📀 Album images available:', info.track?.album?.images?.length || 0);
+            
+            // If no artist images, try to fetch artist directly
+            if ((!info.artist?.images || info.artist.images.length === 0) && info.artists && info.artists.length > 0) {
+              console.log('🔍 No artist images found, trying direct artist search...');
+              try {
+                // Try searching for the first artist individually
+                const artistQuery = encodeURIComponent(info.artists[0]);
+                const artistUrl = `${apiBase}/api/spotify/search?q=${artistQuery}`;
+                const artistResponse = await fetch(artistUrl);
+                const artistData = await artistResponse.json();
+                
+                if (artistData?.artist?.images?.length > 0) {
+                  console.log('🎨 Found artist images via direct search!', artistData.artist.images.length);
+                  // Merge artist images into the main response
+                  info.artist = artistData.artist;
+                }
+              } catch (artistError) {
+                console.error('❌ Artist direct search failed:', artistError);
+              }
+            }
+            
             setPanelSpotifyData(info);
           } else {
             console.log('❌ No panel Spotify data found');
@@ -852,10 +875,14 @@ export default function SampleFinderApp() {
                               bestImg,
                               artistImg,
                               albumImg,
+                              coverUrl,
+                              mainResultImage,
                               fallback,
                               finalSrc: src,
-                              panelSpotifyData: panelSpotifyData
+                              'IMAGE_SHOULD_BE': coverUrl || fallback
                             });
+                            
+                            console.log('🔥 FORCE DEBUG - coverUrl exists?', !!coverUrl, 'value:', coverUrl);
                             
                             return (
                               <div className="w-full aspect-[4/3]">
