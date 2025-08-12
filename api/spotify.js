@@ -133,6 +133,7 @@ export default async function handler(req, res) {
 
     // 2) Get best artist image and primary artist details
     async function getArtistOrAlbumImage(track) {
+      console.log('🚀 getArtistOrAlbumImage STARTED for track:', track.name);
       try {
         // 1) Fetch ALL individual artists
         const artistIds = (track?.artists || []).map(a => a.id).filter(Boolean);
