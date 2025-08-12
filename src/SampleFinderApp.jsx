@@ -436,9 +436,9 @@ export default function SampleFinderApp() {
                       {/* Header */}
                       <div className="flex items-center justify-between px-5 py-4 border-b border-white/15">
                         <div>
-                          <p className="text-xs text-white/80 uppercase tracking-wide">{panelData?.type === 'source' ? 'Sample Source' : 'Sampled Song'}</p>
-                          <h3 className="text-lg font-semibold text-white">{panelData?.title || 'Title'}</h3>
-                          <p className="text-sm text-white/85">{panelData?.artist || 'Artist'}</p>
+                          <p className="text-sm text-white/80 uppercase tracking-wide">{panelData?.type === 'source' ? 'Sample Source' : 'Sampled Song'}</p>
+                          <h3 className="text-xl font-semibold text-white">{panelData?.title || 'Title'}</h3>
+                          <p className="text-base text-white/85">{panelData?.artist || 'Artist'}</p>
                         </div>
                         <button onClick={closePanel} className="p-2 rounded-md hover:bg-white/10 text-white/80 hover:text-white transition-colors" aria-label="Close">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -446,34 +446,35 @@ export default function SampleFinderApp() {
                       </div>
                       {/* Body */}
                       <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-                        {/* Cover top, details under (artist-forward hierarchy) */}
-                        <div className="flex flex-col items-start gap-3">
-                          <div className="rounded-lg overflow-hidden border border-white/15 bg-white/5">
+                        {/* Small cover left, details right (reverted), with larger text */}
+                        <div className="flex items-start gap-4">
+                          <div className="shrink-0 rounded-lg overflow-hidden border border-white/15 bg-white/5">
                             {(() => {
                               const artistImg = spotifyData?.artist?.images?.[0]?.url;
                               const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
                               const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
                               const src = artistImg || albumImg || fallback;
-                              return <img src={src} alt="Artist or album" className="w-28 h-28 object-cover" />;
+                              return <img src={src} alt="Artist or album" className="w-24 h-24 object-cover" />;
                             })()}
                           </div>
-                          <div className="space-y-1 w-full min-w-0">
-                            <h4 className="text-white text-xl font-bold truncate">{spotifyData?.artist?.name || panelData?.artist || 'Artist'}</h4>
-                            <p className="text-white/85 text-sm truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</p>
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {(spotifyData?.track?.year || panelData?.year) && (
-                                <span className="px-2 py-0.5 text-[10px] rounded-full border border-white/15 text-white/80">{spotifyData?.track?.year || panelData?.year}</span>
-                              )}
-                              {spotifyData?.artist?.genres?.slice(0, 5)?.map((g, idx) => (
-                                <span key={idx} className="px-2 py-0.5 text-[10px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
-                              ))}
-                            </div>
+                          <div className="flex-1 space-y-1 min-w-0">
+                            <h4 className="text-white text-xl font-semibold truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</h4>
+                            <p className="text-white/90 text-base truncate">{spotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
+                            <p className="text-white/70 text-sm">{spotifyData?.track?.year || panelData?.year || ''}</p>
+                            {/* Genres as subtle chips below */}
+                            {spotifyData?.artist?.genres?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {spotifyData.artist.genres.slice(0, 5).map((g, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 text-[11px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         {/* Artist bio (from Wikipedia if available) */}
                         {spotifyData?.artist?.bio && (
-                          <div className="text-sm text-white/90 leading-relaxed">
+                          <div className="text-base text-white/90 leading-relaxed">
                             {spotifyData.artist.bio}
                           </div>
                         )}
