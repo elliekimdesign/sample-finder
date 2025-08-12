@@ -79,15 +79,25 @@ export default function SampleFinderApp() {
       `${apiBase}/api/spotify/search?q=${q}`,
       `${apiBase}/api/spotify?q=${q}`,
     ];
+    
+    console.log(`🎵 Fetching album cover for: "${title}" by "${artist}"`);
+    
     for (const ep of endpoints) {
       try {
+        console.log(`📡 Trying endpoint: ${ep}`);
         const json = await fetchSpotifyJson(ep);
+        console.log(`📦 Spotify response:`, json);
+        
         const url = json?.track?.album?.images?.[0]?.url || '';
-        if (url) return url;
-      } catch (_) {
-        // try next endpoint
+        if (url) {
+          console.log(`✅ Found album cover: ${url}`);
+          return url;
+        }
+      } catch (error) {
+        console.log(`❌ Error with endpoint ${ep}:`, error);
       }
     }
+    console.log(`❌ No album cover found for: "${title}" by "${artist}"`);
     return '';
   }
 
@@ -293,7 +303,39 @@ export default function SampleFinderApp() {
           thumbnail: "/badthings.jpg", // Using available thumbnail
       },
     },
-  ],
+      ],
+    "why i love you": [
+      {
+        title: "Why I Love You",
+        artist: "Kanye West",
+        year: 2011,
+        youtube: "https://youtu.be/HVD4lnfz0-M?si=fqHGykEflGG9nbaC",
+        thumbnail: "/sheknows.jpg", // Temporary thumbnail
+        sampledFrom: {
+          title: "Temporary Sample",
+          artist: "Unknown Artist", 
+          year: 2000,
+          youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
+          thumbnail: "/sheknows.jpg",
+        },
+      },
+    ],
+    "i love u so": [
+      {
+        title: "I Love U So",
+        artist: "Cassius",
+        year: 1999,
+        youtube: "https://youtu.be/NazVKnD-_sQ?si=NKE5iW5PH2uwgWOO&t=15",
+        thumbnail: "/sheknows.jpg", // Temporary thumbnail
+        sampledFrom: {
+          title: "Temporary Sample",
+          artist: "Unknown Artist", 
+          year: 2000,
+          youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
+          thumbnail: "/sheknows.jpg",
+        },
+      },
+    ],
   };
 
   const handleSearch = (e) => {
@@ -301,7 +343,16 @@ export default function SampleFinderApp() {
     const key = query.trim().toLowerCase();
     console.log('Searching for:', key);
     console.log('Found results:', sampleDB[key] || []);
-    setResults(sampleDB[key] || []);
+    const results = sampleDB[key] || [];
+    setResults(results);
+    
+    // Debug: Check if API calls will be made
+    if (results.length > 0) {
+      console.log('Will search Spotify for:', results[0].title, results[0].artist);
+      if (results[0].sampledFrom?.title && results[0].sampledFrom?.artist) {
+        console.log('Will search Spotify for sample source:', results[0].sampledFrom.title, results[0].sampledFrom.artist);
+      }
+    }
   };
 
   // Navigate back to landing (clear results and query)
