@@ -131,8 +131,8 @@ export default async function handler(req, res) {
       albumImages: track.album?.images
     });
 
-    // 2) Get best artist image and primary artist details
-    async function getArtistOrAlbumImage(track) {
+    // 2) Get best artist image and primary artist details - DEFINE FUNCTION FIRST
+    const getArtistOrAlbumImage = async (track) => {
       console.log('🚀 getArtistOrAlbumImage STARTED for track:', track.name);
       try {
         // 1) Fetch ALL individual artists
@@ -186,7 +186,7 @@ export default async function handler(req, res) {
           artist: null
         };
       }
-    }
+    };
 
     const artistNameFromTrack = track?.artists?.[0]?.name;
     const [imageResult, wikiRes] = await Promise.all([
