@@ -386,7 +386,6 @@ export default function SampleFinderApp() {
           onChange={(e) => setQuery(e.target.value)}
                                 className="w-full px-6 py-4 bg-transparent text-white text-lg font-inter font-light border-b border-white/30 focus:outline-none focus:border-white/50 placeholder-gray-400/60 transition-all duration-500"
                               />
-                              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 rounded-full opacity-80"></div>
                             </div>
                             <button 
                               type="submit" 
@@ -397,26 +396,7 @@ export default function SampleFinderApp() {
                               </svg>
         </button>
       </form>
-                          {/* Genre quick filters (from Spotify) */}
-                          {genrePool.length > 0 && (
-                            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                              {genrePool.slice(0, 18).map((g, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => {
-                                    setQuery(g);
-                                    // submit search for this genre
-                                    const fakeEvent = { preventDefault: () => {} };
-                                    handleSearch(fakeEvent);
-                                  }}
-                                  className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-gradient-to-b from-transparent via-white/5 to-transparent border border-white/12 text-white/85 hover:text-white transition-colors"
-                                >
-                                  {g.charAt(0).toUpperCase() + g.slice(1)}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+
                         </div>
                       </>
                     ) : (
@@ -445,27 +425,28 @@ export default function SampleFinderApp() {
                                 </svg>
                               </button>
                             </div>
+                            {/* Genre quick filters right under search input */}
+                            {genrePool.length > 0 && (
+                              <div className="mt-1 flex flex-wrap items-center justify-start gap-2">
+                                {genrePool.slice(0, 18).map((g, idx) => (
+                                  <button
+                                    key={`gh-${idx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      setQuery(g);
+                                      const fakeEvent = { preventDefault: () => {} };
+                                      handleSearch(fakeEvent);
+                                    }}
+                                    className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-gradient-to-b from-transparent via-white/5 to-transparent border border-white/12 text-white/85 hover:text-white transition-colors"
+                                  >
+                                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </form>
                         </div>
-                        {/* Genre quick filters under header on results */}
-                        {genrePool.length > 0 && (
-                          <div className="max-w-7xl mx-auto px-6 mt-2 mb-4 flex flex-wrap items-center gap-2">
-                            {genrePool.slice(0, 18).map((g, idx) => (
-                              <button
-                                key={`gh-${idx}`}
-                                type="button"
-                                onClick={() => {
-                                  setQuery(g);
-                                  const fakeEvent = { preventDefault: () => {} };
-                                  handleSearch(fakeEvent);
-                                }}
-                                className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-gradient-to-b from-transparent via-white/5 to-transparent border border-white/12 text-white/85 hover:text-white transition-colors"
-                              >
-                                {g}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+
                       </div>
                     )}
 
@@ -496,7 +477,7 @@ export default function SampleFinderApp() {
                               {/* Album Art and Song Info - Side by side */}
                               <div className="flex items-start gap-4">
                                 {/* Album Art */}
-                                <div className="relative w-48 flex-shrink-0 cursor-pointer" onClick={() => openPanel({
+                                <div className="relative w-48 flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
                                   artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
@@ -545,7 +526,7 @@ export default function SampleFinderApp() {
                               {/* Album Art and Song Info - Side by side */}
                               <div className="flex items-start gap-4">
                                 {/* Album Art */}
-                                <div className="relative w-48 flex-shrink-0 cursor-pointer" onClick={() => openPanel({
+                                <div className="relative w-48 flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
                                   artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
