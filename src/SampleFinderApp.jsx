@@ -24,7 +24,7 @@ export default function SampleFinderApp() {
   const [genrePool, setGenrePool] = useState([]); // unique list of genres from Spotify
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
-  const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '')));
+  const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : 'https://samplr-red.vercel.app')));
 
   async function fetchSpotifyJson(url) {
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -212,6 +212,7 @@ export default function SampleFinderApp() {
   }, [results, apiBase]);
 
   const openPanel = (data) => {
+    console.log('📂 Opening panel with data:', data);
     setPanelData(data);
     setPanelOpen(true);
     // Fetch Spotify enrichment (best-effort)
@@ -349,26 +350,42 @@ export default function SampleFinderApp() {
 
   // Fetch Spotify data when panel opens
   useEffect(() => {
+    console.log('🔄 Panel useEffect triggered:', { panelOpen, panelData });
     if (panelOpen && panelData?.artist && panelData?.title) {
       const fetchPanelSpotifyData = async () => {
         try {
           console.log('🎵 Fetching panel Spotify data for:', panelData.title, panelData.artist);
+          console.log('🔗 API Base URL:', apiBase);
           const info = await resolveSpotifyInfo(panelData.title, panelData.artist);
           if (info) {
             console.log('✅ Panel Spotify data received:', info);
+            console.log('🖼️ Artist images available:', info.artist?.images?.length || 0);
+            console.log('📀 Album images available:', info.track?.album?.images?.length || 0);
             setPanelSpotifyData(info);
           } else {
             console.log('❌ No panel Spotify data found');
+            setPanelSpotifyData(null);
           }
         } catch (error) {
           console.error('💥 Error fetching panel Spotify data:', error);
+          setPanelSpotifyData(null);
         }
       };
       fetchPanelSpotifyData();
     } else {
+      console.log('⚠️ Panel useEffect conditions not met:', { panelOpen, hasArtist: !!panelData?.artist, hasTitle: !!panelData?.title });
       setPanelSpotifyData(null);
     }
   }, [panelOpen, panelData?.artist, panelData?.title]);
+
+  // Additional useEffect to log whenever panelSpotifyData changes
+  useEffect(() => {
+    console.log('📊 panelSpotifyData changed:', panelSpotifyData);
+    if (panelSpotifyData) {
+      console.log('👤 Artist data:', panelSpotifyData.artist);
+      console.log('🎵 Track data:', panelSpotifyData.track);
+    }
+  }, [panelSpotifyData]);
 
   return (
                     <div className="min-h-screen relative overflow-hidden">
@@ -784,13 +801,42 @@ export default function SampleFinderApp() {
       </div>
                       {/* Body */}
                       <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+                        {/* ALWAYS VISIBLE DEBUG BOX */}
+                        <div className="sticky top-0 z-50 text-sm text-yellow-300 p-4 bg-yellow-900/80 border border-yellow-500/50 rounded-lg shadow-lg mb-4">
+                          <div className="font-bold">🐛 DEBUG PANEL</div>
+                          <div>panelSpotifyData: {panelSpotifyData ? 'EXISTS' : 'NULL'}</div>
+                          <div>panelOpen: {panelOpen ? 'TRUE' : 'FALSE'}</div>
+                          <div>panelData: {panelData ? 'EXISTS' : 'NULL'}</div>
+                          {panelSpotifyData && (
+                            <>
+                              <div>Artist images: {panelSpotifyData.artist?.images?.length || 0}</div>
+                              <div>Album images: {panelSpotifyData.track?.album?.images?.length || 0}</div>
+                              <div>Best image: {panelSpotifyData.artist?.bestImage ? 'FOUND' : 'NULL'}</div>
+                              {panelSpotifyData.artist?.bestImage && (
+                                <div className="text-xs mt-2 break-all">Best IMG: {panelSpotifyData.artist.bestImage.substring(0, 50)}...</div>
+                              )}
+                            </>
+                          )}
+                        </div>
                         {/* Large cover on top (original style), details below */}
                         <div className="w-full rounded-lg overflow-hidden border border-white/15 bg-white/5">
                           {(() => {
+                            // Use the new bestImage field first, then fallback to original logic
+                            const bestImg = panelSpotifyData?.artist?.bestImage;
                             const artistImg = panelSpotifyData?.artist?.images?.[0]?.url;
                             const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
                             const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
-                            const src = artistImg || albumImg || fallback;
+                            const src = bestImg || artistImg || albumImg || fallback;
+                            
+                            console.log('🖼️ Panel Image Debug:', {
+                              bestImg,
+                              artistImg,
+                              albumImg,
+                              fallback,
+                              finalSrc: src,
+                              panelSpotifyData: panelSpotifyData
+                            });
+                            
                             return (
                               <div className="w-full aspect-[4/3]">
                                 <img src={src} alt="Artist or album" className="w-full h-full object-cover" />

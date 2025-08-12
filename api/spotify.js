@@ -131,35 +131,60 @@ export default async function handler(req, res) {
       albumImages: track.album?.images
     });
 
-    // 2) Artist details
-    const artistId = track.artists?.[0]?.id;
-    let artist = null;
-    // Fetch artist details and a short wiki summary in parallel (best-effort)
-    const artistNameFromTrack = track?.artists?.[0]?.name;
-    const [artistRes, wikiRes] = await Promise.all([
-      (async () => {
-        if (!artistId) return null;
-        try {
-          const a = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const aData = await a.json();
-          if (a.ok) {
-            console.log('🎨 Spotify Artist Data:', {
-              name: aData.name,
-              imageCount: aData.images?.length || 0,
-              images: aData.images,
-              genres: aData.genres
-            });
-            return aData;
+    // 2) Get best artist image and primary artist details
+    async function getArtistOrAlbumImage(track) {
+      try {
+        // 1) Fetch ALL individual artists
+        const artistIds = (track?.artists || []).map(a => a.id).filter(Boolean);
+        console.log('🎯 Fetching artists:', artistIds);
+
+        // 2) Collect artist images from all artists
+        const artists = await Promise.allSettled(
+          artistIds.map(id =>
+            fetch(`https://api.spotify.com/v1/artists/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }).then(r => {
+              console.log('🎨 Artist status:', id, r.status);
+              if (!r.ok) throw new Error('artist ' + r.status);
+              return r.json();
+            })
+          )
+        );
+
+        // 3) Find first artist with images
+        for (const a of artists) {
+          if (a.status === 'fulfilled' && Array.isArray(a.value.images) && a.value.images.length) {
+            console.log('✅ Found artist with images:', a.value.name, a.value.images.length);
+            return {
+              image: a.value.images[0].url,
+              artist: a.value
+            };
           }
-          console.error('❌ Artist fetch failed:', aData);
-          return null;
-        } catch (error) {
-          console.error('💥 Artist fetch error:', error);
-          return null;
         }
-      })(),
+
+        // 4) Fallback to album image
+        if (Array.isArray(track?.album?.images) && track.album.images.length) {
+          console.log('📀 Using album image as fallback');
+          return {
+            image: track.album.images[0].url,
+            artist: artists.find(a => a.status === 'fulfilled')?.value || null
+          };
+        }
+
+        console.log('❌ No images found anywhere');
+        return { image: null, artist: null };
+      } catch (err) {
+        console.error('💥 Image resolve error:', err);
+        return {
+          image: track?.album?.images?.[0]?.url || null,
+          artist: null
+        };
+      }
+    }
+
+    const artistNameFromTrack = track?.artists?.[0]?.name;
+    const [imageResult, wikiRes] = await Promise.all([
+      getArtistOrAlbumImage(track),
       (async () => {
         try {
           const name = artistNameFromTrack;
@@ -206,7 +231,7 @@ export default async function handler(req, res) {
       })(),
     ]);
 
-    artist = artistRes;
+    const artist = imageResult?.artist;
     const artistBio = wikiRes?.bio || null;
     const artistWikiUrl = wikiRes?.url || null;
 
@@ -233,6 +258,8 @@ export default async function handler(req, res) {
             spotifyUrl: artist.external_urls?.spotify,
             bio: artistBio,
             wikipediaUrl: artistWikiUrl,
+            // Add the best image found
+            bestImage: imageResult?.image,
           }
         : null,
       attribution: 'Images & data from Spotify',
