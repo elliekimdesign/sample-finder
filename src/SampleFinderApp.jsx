@@ -479,14 +479,14 @@ export default function SampleFinderApp() {
                            <div className="relative">
                              <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10"></div>
                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
-                            {/* Left Side - Sampled Song Info */}
-                             <div className="flex items-start gap-6 lg:col-span-6">
-                               <div className="flex flex-col">
-                                 <div className="mb-2">
-                                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Current Hit</div>
-                                   <div className="mt-1 h-px bg-white/12"></div>
-                             </div>
-                           </div>
+                            
+                            {/* Left Side - Current Hit (She Knows) */}
+                             <div className="lg:col-span-6">
+                               <div className="mb-4">
+                                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Current Hit</div>
+                                 <div className="mt-1 h-px bg-white/12"></div>
+                               </div>
+                               <div className="flex items-start gap-6">
                                  <div className="relative w-52 aspect-square cursor-pointer" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
@@ -495,37 +495,37 @@ export default function SampleFinderApp() {
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                  })}>
-                                <div className="absolute -inset-2 opacity-70" style={{
-                                  background: (() => { const c = dominantColors[`${item.title}|${item.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
-                                 }}></div>
-                                 <img 
-                                  src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
-                                  alt={`${item.title} album art`}
-                                  className="relative w-full h-full object-cover shadow-xl border border-white/10" 
-                                 />
+                                  <div className="absolute -inset-2 opacity-70" style={{
+                                    background: (() => { const c = dominantColors[`${item.title}|${item.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                   }}></div>
+                                   <img 
+                                    src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
+                                    alt={`${item.title} album art`}
+                                    className="relative w-full h-full object-cover shadow-xl border border-white/10" 
+                                   />
                                  </div>
+                                 <div className="cursor-pointer flex-1 min-w-0" onClick={() => openPanel({
+                                  type: 'sampled',
+                                  title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
+                                  artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
+                                  year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
+                                  image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
+                                  description: 'Artist and album details will appear here. Placeholder content.'
+                                })}>
+                                   <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
+                                  <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}</p>
+                                  <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
+                                </div>
                                </div>
-                              <div className="cursor-pointer" onClick={() => openPanel({
-                                type: 'sampled',
-                                title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
-                                artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
-                                year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
-                                image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
-                                description: 'Artist and album details will appear here. Placeholder content.'
-                              })}>
-                                 <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
-                                <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}</p>
-                                <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
-                              </div>
-                            </div>
+                             </div>
 
-                            {/* Right Side - Sample Source Info */}
-                             <div className="flex items-start gap-6 lg:col-start-7 lg:col-span-6">
-                               <div className="flex flex-col">
-                                 <div className="mb-2">
-                                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Original Track</div>
-                                   <div className="mt-1 h-px bg-white/12"></div>
-                                 </div>
+                            {/* Right Side - Original Track (Bad Things) */}
+                             <div className="lg:col-span-6">
+                               <div className="mb-4">
+                                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Original Track</div>
+                                 <div className="mt-1 h-px bg-white/12"></div>
+                               </div>
+                               <div className="flex items-start gap-6">
                                  <div className="relative w-52 aspect-square cursor-pointer" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
@@ -534,29 +534,29 @@ export default function SampleFinderApp() {
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                  })}>
-                                <div className="absolute -inset-2 opacity-70" style={{
-                                  background: (() => { const c = dominantColors[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
-                                 }}></div>
-                                 <img 
-                                  src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
-                                  alt={`${item.sampledFrom.title} album art`}
-                                  className="relative w-full h-full object-cover shadow-xl border border-white/10" 
-                                 />
+                                  <div className="absolute -inset-2 opacity-70" style={{
+                                    background: (() => { const c = dominantColors[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                   }}></div>
+                                   <img 
+                                    src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
+                                    alt={`${item.sampledFrom.title} album art`}
+                                    className="relative w-full h-full object-cover shadow-xl border border-white/10" 
+                                   />
                                  </div>
+                                 <div className="cursor-pointer flex-1 min-w-0" onClick={() => openPanel({
+                                  type: 'source',
+                                  title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
+                                  artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
+                                  year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
+                                  image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
+                                  description: 'Source artist and album details will appear here. Placeholder content.'
+                                })}>
+                                   <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
+                                  <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist}</p>
+                                  <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
+                                </div>
                                </div>
-                              <div className="cursor-pointer" onClick={() => openPanel({
-                                type: 'source',
-                                title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
-                                artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
-                                year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
-                                image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
-                                description: 'Source artist and album details will appear here. Placeholder content.'
-                              })}>
-                                 <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
-                                <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist}</p>
-                                <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
-                              </div>
-                            </div>
+                             </div>
                           </div>
 
                            {/* Video Player Cards - widen separation on large screens */}
@@ -598,10 +598,10 @@ export default function SampleFinderApp() {
                                   className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
                                   ></iframe>
                </div>
-             </div>
-               </div>
-             </div>
-                           </div>
+              </div>
+            </div>
+              </div>
+            </div>
           </div>
         ))}
 
