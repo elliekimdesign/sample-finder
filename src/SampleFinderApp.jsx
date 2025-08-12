@@ -14,6 +14,7 @@ export default function SampleFinderApp() {
   const [discoverList] = useState(() => initialDiscover);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelData, setPanelData] = useState(null);
+  const [panelSpotifyData, setPanelSpotifyData] = useState(null);
   const [spotifyData, setSpotifyData] = useState(null);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [spotifyError, setSpotifyError] = useState('');
@@ -324,9 +325,9 @@ export default function SampleFinderApp() {
           year: 2000,
           youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
           thumbnail: "/sheknows.jpg",
-        },
       },
-    ],
+    },
+  ],
   };
 
   const handleSearch = (e) => {
@@ -351,15 +352,21 @@ export default function SampleFinderApp() {
     if (panelOpen && panelData?.artist && panelData?.title) {
       const fetchPanelSpotifyData = async () => {
         try {
+          console.log('🎵 Fetching panel Spotify data for:', panelData.title, panelData.artist);
           const info = await resolveSpotifyInfo(panelData.title, panelData.artist);
           if (info) {
-            setSpotifyData(info);
+            console.log('✅ Panel Spotify data received:', info);
+            setPanelSpotifyData(info);
+          } else {
+            console.log('❌ No panel Spotify data found');
           }
         } catch (error) {
-          console.error('Error fetching panel Spotify data:', error);
+          console.error('💥 Error fetching panel Spotify data:', error);
         }
       };
       fetchPanelSpotifyData();
+    } else {
+      setPanelSpotifyData(null);
     }
   }, [panelOpen, panelData?.artist, panelData?.title]);
 
@@ -444,9 +451,9 @@ export default function SampleFinderApp() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-                            </button>
-                          </form>
-                          
+        </button>
+      </form>
+
                           {/* Try example */}
                           <div className="text-center">
                             <p className="text-sm text-white/50 font-inter font-light">
@@ -454,9 +461,13 @@ export default function SampleFinderApp() {
                               <button 
                                 type="button"
                                 onClick={() => {
-                                  setQuery("Why I love you");
-                                  const fakeEvent = { preventDefault: () => {} };
-                                  handleSearch(fakeEvent);
+                                  setQuery("why i love you");
+                                  setTimeout(() => {
+                                    const key = "why i love you";
+                                    console.log('Searching for:', key);
+                                    console.log('Found results:', sampleDB[key] || []);
+                                    setResults(sampleDB[key] || []);
+                                  }, 100);
                                 }}
                                 className="ml-1 text-white/70 hover:text-white underline underline-offset-2 transition-colors duration-300"
                               >
@@ -776,8 +787,8 @@ export default function SampleFinderApp() {
                         {/* Large cover on top (original style), details below */}
                         <div className="w-full rounded-lg overflow-hidden border border-white/15 bg-white/5">
                           {(() => {
-                            const artistImg = spotifyData?.artist?.images?.[0]?.url;
-                            const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
+                            const artistImg = panelSpotifyData?.artist?.images?.[0]?.url;
+                            const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
                             const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
                             const src = artistImg || albumImg || fallback;
                             return (
@@ -790,7 +801,7 @@ export default function SampleFinderApp() {
                         
                         {/* Small album art below artist image */}
                         {(() => {
-                          const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
+                          const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
                           if (albumImg) {
                             return (
                               <div className="flex justify-start">
@@ -803,12 +814,12 @@ export default function SampleFinderApp() {
                           return null;
                         })()}
                         <div className="space-y-1 min-w-0">
-                          <h4 className="text-white text-xl font-semibold truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</h4>
-                          <p className="text-white/90 text-base truncate">{spotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
-                          <p className="text-white/70 text-sm">{spotifyData?.track?.year || panelData?.year || ''}</p>
-                          {spotifyData?.artist?.genres?.length > 0 && (
+                          <h4 className="text-white text-xl font-semibold truncate">{panelSpotifyData?.track?.name || panelData?.title || 'Title'}</h4>
+                          <p className="text-white/90 text-base truncate">{panelSpotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
+                          <p className="text-white/70 text-sm">{panelSpotifyData?.track?.year || panelData?.year || ''}</p>
+                          {panelSpotifyData?.artist?.genres?.length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-1">
-                              {spotifyData.artist.genres.slice(0, 5).map((g, idx) => (
+                              {panelSpotifyData.artist.genres.slice(0, 5).map((g, idx) => (
                                 <span key={idx} className="px-2 py-0.5 text-[11px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
                               ))}
                             </div>
@@ -816,23 +827,20 @@ export default function SampleFinderApp() {
                         </div>
 
                         {/* Artist bio (from Wikipedia if available) - single instance */}
-                        {spotifyData?.artist?.bio && (
+                        {panelSpotifyData?.artist?.bio && (
                           <div className="text-base text-white/90 leading-relaxed">
-                            {spotifyData.artist.bio}
+                            {panelSpotifyData.artist.bio}
                           </div>
                         )}
 
                         {/* Attribution-only (no logo/links) */}
-                        {spotifyData && (
+                        {panelSpotifyData && (
                           <div className="pt-1 text-[10px] text-white/55">Data from Spotify</div>
                         )}
 
                         {/* Loading / error */}
-                        {spotifyLoading && (
-                          <div className="text-xs text-white/60">Loading Spotify data…</div>
-                        )}
-                        {spotifyError && !spotifyLoading && (
-                          <div className="text-xs text-red-300/80">{spotifyError}</div>
+                        {!panelSpotifyData && panelOpen && (
+                          <div className="text-xs text-white/60">Loading artist data…</div>
                         )}
                       </div>
                     </div>
