@@ -306,7 +306,7 @@ export default function SampleFinderApp() {
           title: "I Love U So",
           artist: "Cassius",
           year: 1999,
-          youtube: "https://youtu.be/NazVKnD-_sQ?si=-epMbz4ez53irk0Q&t=15",
+          youtube: "https://youtu.be/NazVKnD-_sQ?si=-epMbz4ez53irk0Q&t=16",
           thumbnail: "/sheknows.jpg",
         },
       },
