@@ -138,6 +138,7 @@ export default async function handler(req, res) {
         // 1) Fetch ALL individual artists
         const artistIds = (track?.artists || []).map(a => a.id).filter(Boolean);
         console.log('🎯 Fetching artists:', artistIds);
+        console.log('🎤 Track artists detail:', track?.artists);
 
         // 2) Collect artist images from all artists
         const artists = await Promise.allSettled(
@@ -169,6 +170,7 @@ export default async function handler(req, res) {
         }
 
         // 4) Fallback to album image
+        console.log('💿 Album images check:', track?.album?.images);
         if (Array.isArray(track?.album?.images) && track.album.images.length) {
           console.log('📀 Using album image as fallback');
           return {
@@ -177,7 +179,8 @@ export default async function handler(req, res) {
           };
         }
 
-        console.log('❌ No images found anywhere');
+        console.log('❌ No images found anywhere - artists failed and no album images');
+        console.log('🔍 Failed artists details:', artists);
         return { image: null, artist: null };
       } catch (err) {
         console.error('💥 Image resolve error:', err);
