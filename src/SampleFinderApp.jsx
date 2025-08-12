@@ -427,7 +427,7 @@ export default function SampleFinderApp() {
 
                         {/* Unified Search Form (Hero) */}
                         <div className="w-full max-w-3xl mb-16 lg:mb-24">
-                          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-4">
+                                                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-4">
                             <div className="flex-1 relative">
         <input
           type="text"
@@ -444,8 +444,26 @@ export default function SampleFinderApp() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-        </button>
-      </form>
+                            </button>
+                          </form>
+                          
+                          {/* Try example */}
+                          <div className="text-center">
+                            <p className="text-sm text-white/50 font-inter font-light">
+                              Try me → 
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setQuery("Why I love you");
+                                  const fakeEvent = { preventDefault: () => {} };
+                                  handleSearch(fakeEvent);
+                                }}
+                                className="ml-1 text-white/70 hover:text-white underline underline-offset-2 transition-colors duration-300"
+                              >
+                                "Why I love you"
+                              </button>
+                            </p>
+                          </div>
 
                         </div>
                       </>
