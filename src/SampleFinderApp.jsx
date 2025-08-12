@@ -304,6 +304,15 @@ export default function SampleFinderApp() {
     setResults(sampleDB[key] || []);
   };
 
+  // Navigate back to landing (clear results and query)
+  const goHome = () => {
+    setResults([]);
+    setQuery("");
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
                     <div className="min-h-screen relative overflow-hidden">
       
@@ -370,11 +379,11 @@ export default function SampleFinderApp() {
                         <div className="w-full max-w-3xl mb-16 lg:mb-24">
                           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-4">
                             <div className="flex-1 relative">
-                              <input
-                                type="text"
-                                placeholder="Type a song title..."
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+        <input
+          type="text"
+          placeholder="Type a song title..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
                                 className="w-full px-6 py-4 bg-transparent text-white text-lg font-inter font-light border-b border-white/20 focus:outline-none focus:border-white/40 placeholder-gray-400/60 transition-all duration-500"
                               />
                             </div>
@@ -385,8 +394,8 @@ export default function SampleFinderApp() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-                            </button>
-                          </form>
+        </button>
+      </form>
                           {/* Genre quick filters (from Spotify) */}
                           {genrePool.length > 0 && (
                             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -414,7 +423,9 @@ export default function SampleFinderApp() {
                       <div className="relative w-full bg-transparent mb-12">
                         <div className="absolute bottom-0 h-px bg-white/10 pointer-events-none" style={{ left: 'calc(-50vw + 50%)', right: 'calc(-50vw + 50%)' }}></div>
                         <div className="max-w-7xl mx-auto px-6 py-6 md:py-8 flex items-center gap-6">
-                          <div className="font-bitcount text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 tracking-tight lg:tracking-normal leading-[1.35] whitespace-nowrap">sample finder</div>
+                          <button type="button" onClick={goHome} className="font-bitcount text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 tracking-tight lg:tracking-normal leading-[1.35] whitespace-nowrap hover:text-white focus:outline-none">
+                            sample finder
+                          </button>
                           <form onSubmit={handleSearch} className="flex-1">
                             <div className="flex gap-3 items-center">
                               <input
@@ -435,34 +446,65 @@ export default function SampleFinderApp() {
                             </div>
                           </form>
                         </div>
+                        {/* Genre quick filters under header on results */}
+                        {genrePool.length > 0 && (
+                          <div className="max-w-7xl mx-auto px-6 mt-2 mb-4 flex flex-wrap items-center gap-2">
+                            {genrePool.slice(0, 18).map((g, idx) => (
+                              <button
+                                key={`gh-${idx}`}
+                                type="button"
+                                onClick={() => {
+                                  setQuery(g);
+                                  const fakeEvent = { preventDefault: () => {} };
+                                  handleSearch(fakeEvent);
+                                }}
+                                className="px-3 py-1 text-[11px] rounded-full bg-white/6 hover:bg-white/10 border border-white/12 text-white/85 hover:text-white transition-colors"
+                              >
+                                {g}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
                                                                     {/* Results container */}
                     <div className="w-full max-w-7xl">
         {results.map((item, i) => (
-                        <div key={i} className="mt-10 space-y-14 lg:space-y-16">
-                          {/* Album Info (No Cards) */}
-                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
+                        <div
+                          key={i}
+                          className={`${i > 0 ? 'pt-16 mt-16 border-t border-white/10' : 'mt-12'} space-y-16 lg:space-y-20`}
+                        >
+                           {/* Album Info (No Cards) */}
+                           <div className="relative">
+                             <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10"></div>
+                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
                             {/* Left Side - Sampled Song Info */}
-                            <div className="flex items-center gap-6 lg:col-span-6">
-                              <div className="relative w-36 h-36 rounded-2xl cursor-pointer" onClick={() => openPanel({
+                             <div className="flex items-start gap-6 lg:col-span-6">
+                               <div className="flex flex-col">
+                                 <div className="mb-2">
+                                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Current Hit</div>
+                                   <div className="mt-1 h-px bg-white/12"></div>
+                             </div>
+                           </div>
+                                 <div className="relative w-52 aspect-square cursor-pointer" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
                                   artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
                                   year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
-                                })}>
-                                <div className="absolute -inset-2 rounded-[18px] opacity-70" style={{
+                                 })}>
+                                <div className="absolute -inset-2 opacity-70" style={{
                                   background: (() => { const c = dominantColors[`${item.title}|${item.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
-                                }}></div>
-                                <img 
+                                 }}></div>
+                                 <img 
                                   src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
                                   alt={`${item.title} album art`}
-                                  className="relative w-36 h-36 rounded-xl object-cover shadow-xl border border-white/10" 
-                                />
-                              </div>
+                                  className="relative w-full h-full object-cover shadow-xl border border-white/10" 
+                                 />
+                                 </div>
+                               </div>
                               <div className="cursor-pointer" onClick={() => openPanel({
                                 type: 'sampled',
                                 title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
@@ -471,32 +513,37 @@ export default function SampleFinderApp() {
                                 image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                 description: 'Artist and album details will appear here. Placeholder content.'
                               })}>
-                                <span className="inline-block px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[11px] font-medium text-white/80 border border-white/20">Sampled Song</span>
-                                <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
+                                 <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
                                 <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}</p>
                                 <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
                               </div>
                             </div>
 
                             {/* Right Side - Sample Source Info */}
-                            <div className="flex items-center gap-6 lg:col-span-6">
-                              <div className="relative w-36 h-36 rounded-2xl cursor-pointer" onClick={() => openPanel({
+                             <div className="flex items-start gap-6 lg:col-start-7 lg:col-span-6">
+                               <div className="flex flex-col">
+                                 <div className="mb-2">
+                                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Original Track</div>
+                                   <div className="mt-1 h-px bg-white/12"></div>
+                                 </div>
+                                 <div className="relative w-52 aspect-square cursor-pointer" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
                                   artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
                                   year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
-                                })}>
-                                <div className="absolute -inset-2 rounded-[18px] opacity-70" style={{
+                                 })}>
+                                <div className="absolute -inset-2 opacity-70" style={{
                                   background: (() => { const c = dominantColors[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
-                                }}></div>
-                                <img 
+                                 }}></div>
+                                 <img 
                                   src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
                                   alt={`${item.sampledFrom.title} album art`}
-                                  className="relative w-36 h-36 rounded-xl object-cover shadow-xl border border-white/10" 
-                                />
-                              </div>
+                                  className="relative w-full h-full object-cover shadow-xl border border-white/10" 
+                                 />
+                                 </div>
+                               </div>
                               <div className="cursor-pointer" onClick={() => openPanel({
                                 type: 'source',
                                 title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
@@ -505,16 +552,17 @@ export default function SampleFinderApp() {
                                 image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                 description: 'Source artist and album details will appear here. Placeholder content.'
                               })}>
-                                <span className="inline-block px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[11px] font-medium text-white/80 border border-white/20">Sample Source</span>
-                                <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
+                                 <h3 className="text-xl sm:text-2xl font-bold text-white mt-2 font-ptserif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
                                 <p className="text-base sm:text-lg text-gray-300">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist}</p>
                                 <p className="text-xs sm:text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
                               </div>
                             </div>
                           </div>
 
-                          {/* Video Player Cards - widen separation on large screens */}
-                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+                           {/* Video Player Cards - widen separation on large screens */}
+                           <div className="relative">
+                             <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10"></div>
+                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group lg:col-span-6">
                               <div className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
@@ -532,10 +580,10 @@ export default function SampleFinderApp() {
                                   ></iframe>
                                 </div>
                               </div>
-                            </div>
+                             </div>
 
-                            {/* Right Side - Sample Source Video */}
-                            <div className="relative group lg:col-span-6">
+                             {/* Right Side - Sample Source Video */}
+                             <div className="relative group lg:col-start-7 lg:col-span-6">
                               <div className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
                                 <div className="aspect-video">
@@ -549,18 +597,21 @@ export default function SampleFinderApp() {
                                   allowFullScreen
                                   className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
                                   ></iframe>
-              </div>
-            </div>
-              </div>
-            </div>
+               </div>
+             </div>
+               </div>
+             </div>
+                           </div>
           </div>
         ))}
 
-                      {/* Discover More - Placeholder cards to keep exploring */}
+                      {/* Discover More - clearly separated section (wider than main) */}
                       {results.length > 0 && (
-                        <div className="mt-24 lg:mt-32">
-                          <h4 className="text-white/80 text-lg font-semibold mb-6">Discover more sampled tracks</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="mt-28 lg:mt-40 relative w-screen left-1/2 -translate-x-1/2">
+                          <div className="max-w-[90rem] mx-auto px-6">
+                            <div className="h-px bg-white/5 mb-8"></div>
+                            <h4 className="text-white/85 text-lg font-semibold mb-6">Discover more sampled tracks</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {discoverList.map((d, idx) => (
                               <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
                                 <div className="flex items-center gap-4 p-4">
@@ -594,9 +645,10 @@ export default function SampleFinderApp() {
                                       YouTube link coming soon
                                     </div>
                                   )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -607,7 +659,7 @@ export default function SampleFinderApp() {
                       {/* Header */}
                       <div className="flex items-center justify-between px-5 py-4 border-b border-white/15">
                         <div>
-                          <p className="text-sm text-white/80 uppercase tracking-wide">{panelData?.type === 'source' ? 'Sample Source' : 'Sampled Song'}</p>
+                          <p className="text-sm text-white/80 uppercase tracking-wide">{panelData?.type === 'source' ? 'Original Track' : 'Current Hit'}</p>
                           <h3 className="text-xl font-semibold text-white">{panelData?.title || 'Title'}</h3>
                           <p className="text-base text-white/85">{panelData?.artist || 'Artist'}</p>
                         </div>
