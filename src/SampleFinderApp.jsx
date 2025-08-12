@@ -19,7 +19,7 @@ export default function SampleFinderApp() {
   const [spotifyError, setSpotifyError] = useState('');
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
-  const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '');
+  const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '')));
 
   async function fetchSpotifyJson(url) {
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
