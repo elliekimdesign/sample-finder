@@ -80,24 +80,15 @@ export default function SampleFinderApp() {
       `${apiBase}/api/spotify?q=${q}`,
     ];
     
-    console.log(`🎵 Fetching album cover for: "${title}" by "${artist}"`);
-    
     for (const ep of endpoints) {
       try {
-        console.log(`📡 Trying endpoint: ${ep}`);
         const json = await fetchSpotifyJson(ep);
-        console.log(`📦 Spotify response:`, json);
-        
         const url = json?.track?.album?.images?.[0]?.url || '';
-        if (url) {
-          console.log(`✅ Found album cover: ${url}`);
-          return url;
-        }
-      } catch (error) {
-        console.log(`❌ Error with endpoint ${ep}:`, error);
+        if (url) return url;
+      } catch (_) {
+        // try next endpoint
       }
     }
-    console.log(`❌ No album cover found for: "${title}" by "${artist}"`);
     return '';
   }
 
@@ -343,16 +334,7 @@ export default function SampleFinderApp() {
     const key = query.trim().toLowerCase();
     console.log('Searching for:', key);
     console.log('Found results:', sampleDB[key] || []);
-    const results = sampleDB[key] || [];
-    setResults(results);
-    
-    // Debug: Check if API calls will be made
-    if (results.length > 0) {
-      console.log('Will search Spotify for:', results[0].title, results[0].artist);
-      if (results[0].sampledFrom?.title && results[0].sampledFrom?.artist) {
-        console.log('Will search Spotify for sample source:', results[0].sampledFrom.title, results[0].sampledFrom.artist);
-      }
-    }
+    setResults(sampleDB[key] || []);
   };
 
   // Navigate back to landing (clear results and query)
