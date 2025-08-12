@@ -67,31 +67,31 @@ export default function SampleFinderApp() {
         year: 2014,
         youtube: "https://youtu.be/jYdaQJzcAcw?si=lr20a6NH9pP3xEmj&t=10",
         thumbnail: "/sheknows.jpg",
-                            sampledFrom: {
+        sampledFrom: {
                       title: "Bad Things",
                       artist: "Cults",
                       year: 2011,
                       youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
-                      thumbnail: "/badthings.jpg",
-                    },
-      },
-    ],
-    "power": [
-      {
-        title: "Power",
-        artist: "Kanye West",
-        year: 2010,
-        youtube: "https://www.youtube.com/watch?v=L53gjP-TtGE",
-        thumbnail: "/sheknows.jpg", // Using available thumbnail
-        sampledFrom: {
-          title: "21st Century Schizoid Man",
-          artist: "King Crimson",
-          year: 1969,
-          youtube: "https://www.youtube.com/watch?v=YF1R0hc5QpQ",
-          thumbnail: "/badthings.jpg", // Using available thumbnail
+          thumbnail: "/badthings.jpg",
         },
       },
     ],
+    "power": [
+    {
+        title: "Power",
+        artist: "Kanye West",
+        year: 2010,
+      youtube: "https://www.youtube.com/watch?v=L53gjP-TtGE",
+        thumbnail: "/sheknows.jpg", // Using available thumbnail
+      sampledFrom: {
+          title: "21st Century Schizoid Man",
+          artist: "King Crimson",
+          year: 1969,
+        youtube: "https://www.youtube.com/watch?v=YF1R0hc5QpQ",
+          thumbnail: "/badthings.jpg", // Using available thumbnail
+        },
+    },
+  ],
   };
 
   const handleSearch = (e) => {
@@ -168,11 +168,11 @@ export default function SampleFinderApp() {
                     <div className="w-full max-w-3xl">
                       <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-8">
                         <div className="flex-1 relative">
-                          <input
-                            type="text"
-                            placeholder="Type a song title..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
+        <input
+          type="text"
+          placeholder="Type a song title..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
                             className="w-full px-6 py-4 bg-transparent text-white text-lg font-inter font-light border-b border-white/20 focus:outline-none focus:border-white/40 placeholder-gray-400/60 transition-all duration-500"
                           />
                         </div>
@@ -183,8 +183,8 @@ export default function SampleFinderApp() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
-                        </button>
-                      </form>
+        </button>
+      </form>
                       <p className="text-white/40 text-xs text-center mt-3 font-inter font-light">
                         Try: "She Knows"
                       </p>
@@ -192,7 +192,7 @@ export default function SampleFinderApp() {
 
                                                                     {/* Results container */}
                     <div className="w-full max-w-7xl">
-                      {results.map((item, i) => (
+        {results.map((item, i) => (
                         <div key={i} className="mt-8 space-y-8">
                           {/* Album Info (No Cards) */}
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
@@ -275,8 +275,8 @@ export default function SampleFinderApp() {
                                   allowFullScreen
                                   className="w-full h-full"
                                 ></iframe>
-                              </div>
-                            </div>
+              </div>
+            </div>
 
                             {/* Right Side - Sample Source Video */}
                             <div className="relative rounded-xl p-6 border border-white/10 bg-white/[0.03] backdrop-blur-sm hover:bg-white/[0.05] transition-colors shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] lg:col-span-6">
@@ -295,10 +295,10 @@ export default function SampleFinderApp() {
                                   className="w-full h-full"
                                 ></iframe>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+              </div>
+            </div>
+          </div>
+        ))}
 
                       {/* Discover More - Placeholder cards to keep exploring */}
                       {results.length > 0 && (
@@ -391,16 +391,9 @@ export default function SampleFinderApp() {
                           </div>
                         )}
 
-                        {/* Links */}
-                        {(spotifyData?.track?.spotifyUrl || spotifyData?.artist?.spotifyUrl) && (
-                          <div className="flex gap-3 pt-2">
-                            {spotifyData.track?.spotifyUrl && (
-                              <a href={spotifyData.track.spotifyUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1 rounded-full border border-white/15 text-white/80 hover:text-white hover:border-white/30 transition-colors">Open in Spotify (Track)</a>
-                            )}
-                            {spotifyData.artist?.spotifyUrl && (
-                              <a href={spotifyData.artist.spotifyUrl} target="_blank" rel="noreferrer" className="text-xs px-3 py-1 rounded-full border border-white/15 text-white/80 hover:text-white hover:border-white/30 transition-colors">Open in Spotify (Artist)</a>
-                            )}
-                          </div>
+                        {/* Attribution-only (no logo/links) */}
+                        {spotifyData && (
+                          <div className="pt-1 text-[10px] text-white/40">Data from Spotify</div>
                         )}
 
                         {/* Loading / error */}
@@ -417,6 +410,6 @@ export default function SampleFinderApp() {
                       <button className="fixed inset-0 z-40 bg-[#161228]/44" onClick={closePanel} aria-label="Close panel backdrop"></button>
                     )}
                     </div>
-      </div>
+    </div>
   );
 }
