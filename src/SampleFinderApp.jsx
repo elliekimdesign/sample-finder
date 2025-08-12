@@ -346,6 +346,23 @@ export default function SampleFinderApp() {
     }
   };
 
+  // Fetch Spotify data when panel opens
+  useEffect(() => {
+    if (panelOpen && panelData?.artist && panelData?.title) {
+      const fetchPanelSpotifyData = async () => {
+        try {
+          const info = await resolveSpotifyInfo(panelData.title, panelData.artist);
+          if (info) {
+            setSpotifyData(info);
+          }
+        } catch (error) {
+          console.error('Error fetching panel Spotify data:', error);
+        }
+      };
+      fetchPanelSpotifyData();
+    }
+  }, [panelOpen, panelData?.artist, panelData?.title]);
+
   return (
                     <div className="min-h-screen relative overflow-hidden">
       
@@ -729,7 +746,7 @@ export default function SampleFinderApp() {
                             {/* Header */}
       <div className="flex items-center justify-between px-5 pt-8 pb-4 border-b border-white/15">
         <div>
-          <p className="text-sm text-white/80 uppercase tracking-wide mb-3">{panelData?.type === 'source' ? 'Sample Source' : 'About Artist'}</p>
+          <p className="text-sm text-white/80 uppercase tracking-wide mb-3">About Artist</p>
           <h3 className="text-4xl font-semibold text-white">{panelData?.artist || 'Artist'}</h3>
         </div>
         <button onClick={closePanel} className="p-2 rounded-md hover:bg-gradient-to-b from-transparent via-white/5 to-transparent text-white/80 hover:text-white transition-colors" aria-label="Close">
