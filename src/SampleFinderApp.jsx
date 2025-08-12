@@ -460,7 +460,7 @@ export default function SampleFinderApp() {
                             </div>
                             {/* Genre quick filters right under search input */}
                             {genrePool.length > 0 && (
-                              <div className="mt-1 flex flex-wrap items-center justify-start gap-2">
+                              <div className="mt-4 flex flex-wrap items-center justify-start gap-2">
                                 {genrePool.slice(0, 18).map((g, idx) => (
                                   <button
                                     key={`gh-${idx}`}
