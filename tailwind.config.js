@@ -5,9 +5,6 @@ export default {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        ptserif: ['"PT Serif"', 'serif'],
-      },
       animation: {
         'textGlow': 'textGlow 5s ease-in-out infinite',
       },
