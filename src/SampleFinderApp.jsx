@@ -612,7 +612,22 @@ export default function SampleFinderApp() {
                                   <iframe
                                   width="100%"
                                   height="100%"
-                                  src={`https://www.youtube.com/embed/${item.youtube.includes('youtu.be') ? item.youtube.split('youtu.be/')[1].split('?')[0] : item.youtube.split('v=')[1].split('&')[0]}?controls=1`}
+                                  src={(() => {
+                                    const extractVideoId = (url) => {
+                                      if (url.includes('youtu.be/')) {
+                                        const parts = url.split('youtu.be/')[1];
+                                        const videoId = parts.split('?')[0];
+                                        const timeMatch = url.match(/[?&]t=(\d+)/);
+                                        const startTime = timeMatch ? timeMatch[1] : null;
+                                        return { videoId, startTime };
+                                      } else {
+                                        const videoId = url.split('v=')[1].split('&')[0];
+                                        return { videoId, startTime: null };
+                                      }
+                                    };
+                                    const { videoId, startTime } = extractVideoId(item.youtube);
+                                    return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
+                                  })()}
                                   title="YouTube video player"
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -631,7 +646,22 @@ export default function SampleFinderApp() {
                                   <iframe
                                   width="100%"
                                   height="100%"
-                                  src={`https://www.youtube.com/embed/${item.sampledFrom.youtube.includes('youtu.be') ? item.sampledFrom.youtube.split('youtu.be/')[1].split('?')[0] : item.sampledFrom.youtube.split('v=')[1].split('&')[0]}?controls=1`}
+                                  src={(() => {
+                                    const extractVideoId = (url) => {
+                                      if (url.includes('youtu.be/')) {
+                                        const parts = url.split('youtu.be/')[1];
+                                        const videoId = parts.split('?')[0];
+                                        const timeMatch = url.match(/[?&]t=(\d+)/);
+                                        const startTime = timeMatch ? timeMatch[1] : null;
+                                        return { videoId, startTime };
+                                      } else {
+                                        const videoId = url.split('v=')[1].split('&')[0];
+                                        return { videoId, startTime: null };
+                                      }
+                                    };
+                                    const { videoId, startTime } = extractVideoId(item.sampledFrom.youtube);
+                                    return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
+                                  })()}
                                   title="YouTube video player"
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
