@@ -19,6 +19,7 @@ export default function SampleFinderApp() {
   const [spotifyError, setSpotifyError] = useState('');
   const [spotifyCovers, setSpotifyCovers] = useState({}); // key: `${title}|${artist}` -> album image url
   const [spotifyInfo, setSpotifyInfo] = useState({}); // key -> { title, artists, year, coverUrl }
+  const [dominantColors, setDominantColors] = useState({}); // key -> { r,g,b }
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
   const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '')));
@@ -29,6 +30,43 @@ export default function SampleFinderApp() {
     if (!res.ok) throw new Error(`Spotify API ${res.status}`);
     if (!ct.includes('application/json')) throw new Error('Non-JSON response');
     return res.json();
+  }
+
+  // Lightweight dominant color extraction using canvas (best-effort)
+  async function extractDominantColor(imageUrl) {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const size = 24;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(null);
+            ctx.drawImage(img, 0, 0, size, size);
+            const { data } = ctx.getImageData(0, 0, size, size);
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              const alpha = data[i + 3];
+              if (alpha < 200) continue; // skip transparent
+              r += data[i]; g += data[i + 1]; b += data[i + 2];
+              count++;
+            }
+            if (count === 0) return resolve(null);
+            resolve({ r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) });
+          } catch {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = imageUrl;
+      } catch {
+        resolve(null);
+      }
+    });
   }
 
   // Resolve album cover from Spotify for a given title/artist
@@ -83,6 +121,7 @@ export default function SampleFinderApp() {
       if (!results || results.length === 0) return;
       const coverUpdates = {};
       const infoUpdates = {};
+      const colorUpdates = {};
       const tasks = [];
       for (const it of results) {
         if (it?.title && it?.artist) {
@@ -98,6 +137,14 @@ export default function SampleFinderApp() {
             tasks.push(
               resolveSpotifyInfo(it.title, it.artist).then((info) => {
                 if (info) infoUpdates[k1] = info;
+              })
+            );
+          }
+          const sourceUrl1 = spotifyCovers[k1] || it.thumbnail;
+          if (sourceUrl1 && !dominantColors[k1]) {
+            tasks.push(
+              extractDominantColor(sourceUrl1).then((col) => {
+                if (col) colorUpdates[k1] = col;
               })
             );
           }
@@ -118,6 +165,14 @@ export default function SampleFinderApp() {
               })
             );
           }
+          const sourceUrl2 = spotifyCovers[k2] || it.sampledFrom.thumbnail;
+          if (sourceUrl2 && !dominantColors[k2]) {
+            tasks.push(
+              extractDominantColor(sourceUrl2).then((col) => {
+                if (col) colorUpdates[k2] = col;
+              })
+            );
+          }
         }
       }
       if (tasks.length === 0) return;
@@ -128,6 +183,9 @@ export default function SampleFinderApp() {
         }
         if (Object.keys(infoUpdates).length > 0) {
           setSpotifyInfo((prev) => ({ ...prev, ...infoUpdates }));
+        }
+        if (Object.keys(colorUpdates).length > 0) {
+          setDominantColors((prev) => ({ ...prev, ...colorUpdates }));
         }
       }
     }
@@ -219,7 +277,7 @@ export default function SampleFinderApp() {
           year: 1969,
         youtube: "https://www.youtube.com/watch?v=YF1R0hc5QpQ",
           thumbnail: "/badthings.jpg", // Using available thumbnail
-        },
+      },
     },
   ],
   };
@@ -295,7 +353,7 @@ export default function SampleFinderApp() {
                     </div>
 
                             {/* Unified Search Form */}
-                    <div className="w-full max-w-3xl">
+                    <div className="w-full max-w-3xl mb-16 lg:mb-24">
                       <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6 mb-8">
                         <div className="flex-1 relative">
         <input
@@ -315,32 +373,38 @@ export default function SampleFinderApp() {
                           </svg>
         </button>
       </form>
-                      <p className="text-white/40 text-xs text-center mt-3 font-inter font-light">
-                        Try: "She Knows"
-                      </p>
+        {results.length === 0 && (
+                        <p className="text-white/40 text-xs text-center mt-3 font-inter font-light">
+                          Try: "She Knows"
+                        </p>
+        )}
                     </div>
 
                                                                     {/* Results container */}
                     <div className="w-full max-w-7xl">
         {results.map((item, i) => (
-                        <div key={i} className="mt-8 space-y-8">
+                        <div key={i} className="mt-10 space-y-14 lg:space-y-16">
                           {/* Album Info (No Cards) */}
-                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
                             {/* Left Side - Sampled Song Info */}
                             <div className="flex items-center gap-6 lg:col-span-6">
-                              <img 
-                                src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
-                                alt={`${item.title} album art`}
-                                className="w-32 h-32 rounded-xl object-cover shadow-xl cursor-pointer" 
-                                onClick={() => openPanel({
+                              <div className="relative w-36 h-36 rounded-2xl cursor-pointer" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
                                   artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
                                   year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
-                                })}
-                              />
+                                })}>
+                                <div className="absolute -inset-2 rounded-[18px] opacity-70" style={{
+                                  background: (() => { const c = dominantColors[`${item.title}|${item.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                }}></div>
+                                <img 
+                                  src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
+                                  alt={`${item.title} album art`}
+                                  className="relative w-36 h-36 rounded-xl object-cover shadow-xl border border-white/10" 
+                                />
+                              </div>
                               <div className="cursor-pointer" onClick={() => openPanel({
                                 type: 'sampled',
                                 title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
@@ -358,19 +422,23 @@ export default function SampleFinderApp() {
 
                             {/* Right Side - Sample Source Info */}
                             <div className="flex items-center gap-6 lg:col-span-6">
-                              <img 
-                                src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
-                                alt={`${item.sampledFrom.title} album art`}
-                                className="w-32 h-32 rounded-xl object-cover shadow-xl cursor-pointer" 
-                                onClick={() => openPanel({
+                              <div className="relative w-36 h-36 rounded-2xl cursor-pointer" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
                                   artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
                                   year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
-                                })}
-                              />
+                                })}>
+                                <div className="absolute -inset-2 rounded-[18px] opacity-70" style={{
+                                  background: (() => { const c = dominantColors[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                }}></div>
+                                <img 
+                                  src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
+                                  alt={`${item.sampledFrom.title} album art`}
+                                  className="relative w-36 h-36 rounded-xl object-cover shadow-xl border border-white/10" 
+                                />
+                              </div>
                               <div className="cursor-pointer" onClick={() => openPanel({
                                 type: 'source',
                                 title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
@@ -390,12 +458,11 @@ export default function SampleFinderApp() {
                           {/* Video Player Cards - widen separation on large screens */}
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
                             {/* Left Side - Sampled Song Video */}
-                            <div className="relative rounded-xl p-6 border border-white/10 bg-white/[0.03] backdrop-blur-sm hover:bg-white/[0.05] transition-colors shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] lg:col-span-6">
-                              <div className="mb-4">
-                                <span className="inline-block px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[11px] font-medium text-white/80 border border-white/20">Sampled Song</span>
-                              </div>
-                              <div className="aspect-video rounded-lg overflow-hidden ring-1 ring-white/10 transition-colors hover:ring-white/20">
-                                <iframe
+                            <div className="relative group lg:col-span-6">
+                              <div className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
+                              <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
+                                <div className="aspect-video">
+                                  <iframe
                                   width="100%"
                                   height="100%"
                                   src={`https://www.youtube.com/embed/${item.youtube.includes('youtu.be') ? item.youtube.split('youtu.be/')[1].split('?')[0] : item.youtube.split('v=')[1].split('&')[0]}?controls=1`}
@@ -403,18 +470,18 @@ export default function SampleFinderApp() {
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
-                                  className="w-full h-full"
-                                ></iframe>
-              </div>
-            </div>
+                                  className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
+                                  ></iframe>
+                                </div>
+                              </div>
+                            </div>
 
                             {/* Right Side - Sample Source Video */}
-                            <div className="relative rounded-xl p-6 border border-white/10 bg-white/[0.03] backdrop-blur-sm hover:bg-white/[0.05] transition-colors shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] lg:col-span-6">
-                              <div className="mb-4">
-                                <span className="inline-block px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[11px] font-medium text-white/80 border border-white/20">Sample Source</span>
-                              </div>
-                              <div className="aspect-video rounded-lg overflow-hidden ring-1 ring-white/10 transition-colors hover:ring-white/20">
-                                <iframe
+                            <div className="relative group lg:col-span-6">
+                              <div className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
+                              <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
+                                <div className="aspect-video">
+                                  <iframe
                                   width="100%"
                                   height="100%"
                                   src={`https://www.youtube.com/embed/${item.sampledFrom.youtube.includes('youtu.be') ? item.sampledFrom.youtube.split('youtu.be/')[1].split('?')[0] : item.sampledFrom.youtube.split('v=')[1].split('&')[0]}?controls=1`}
@@ -422,9 +489,10 @@ export default function SampleFinderApp() {
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
-                                  className="w-full h-full"
-                                ></iframe>
-                              </div>
+                                  className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
+                                  ></iframe>
+              </div>
+            </div>
               </div>
             </div>
           </div>
@@ -543,7 +611,7 @@ export default function SampleFinderApp() {
                     {panelOpen && (
                       <button className="fixed inset-0 z-40 bg-[#161228]/52" onClick={closePanel} aria-label="Close panel backdrop"></button>
                     )}
-                    </div>
+      </div>
     </div>
   );
 }
