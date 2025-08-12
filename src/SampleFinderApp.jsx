@@ -663,17 +663,16 @@ export default function SampleFinderApp() {
 
                     {/* Slide-in Detail Panel */}
                     <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[600px] md:w-[680px] bg-[#18122a]/97 border-l border-white/10 backdrop-blur-md transform transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                      {/* Header */}
-                      <div className="flex items-center justify-between px-5 py-4 border-b border-white/15">
-                        <div>
-                          <p className="text-sm text-white/80 uppercase tracking-wide">{panelData?.type === 'source' ? 'Sample Source' : 'Sampled Song'}</p>
-                          <h3 className="text-xl font-semibold text-white">{panelData?.title || 'Title'}</h3>
-                          <p className="text-base text-white/85">{panelData?.artist || 'Artist'}</p>
-                        </div>
-                        <button onClick={closePanel} className="p-2 rounded-md hover:bg-gradient-to-b from-transparent via-white/5 to-transparent text-white/80 hover:text-white transition-colors" aria-label="Close">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                      </div>
+                            {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-8 pb-4 border-b border-white/15">
+        <div>
+          <p className="text-sm text-white/80 uppercase tracking-wide mb-3">{panelData?.type === 'source' ? 'Sample Source' : 'About Artist'}</p>
+          <h3 className="text-4xl font-semibold text-white">{panelData?.artist || 'Artist'}</h3>
+        </div>
+        <button onClick={closePanel} className="p-2 rounded-md hover:bg-gradient-to-b from-transparent via-white/5 to-transparent text-white/80 hover:text-white transition-colors" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
                       {/* Body */}
                       <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
                         {/* Large cover on top (original style), details below */}
@@ -690,6 +689,21 @@ export default function SampleFinderApp() {
                             );
                           })()}
                         </div>
+                        
+                        {/* Small album art below artist image */}
+                        {(() => {
+                          const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
+                          if (albumImg) {
+                            return (
+                              <div className="flex justify-start">
+                                <div className="w-16 h-16 rounded-md overflow-hidden border border-white/10 bg-white/5">
+                                  <img src={albumImg} alt="Album cover" className="w-full h-full object-cover" />
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         <div className="space-y-1 min-w-0">
                           <h4 className="text-white text-xl font-semibold truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</h4>
                           <p className="text-white/90 text-base truncate">{spotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
