@@ -506,7 +506,7 @@ export default function SampleFinderApp() {
                             </div>
                             {/* Genre quick filters right under search input */}
                             {genrePool.length > 0 && (
-                              <div className="mt-4 flex flex-wrap items-center justify-start gap-2">
+                              <div className="mt-4 mb-8 flex flex-wrap items-center justify-start gap-2">
                                 {genrePool.slice(0, 18).map((g, idx) => (
                                   <button
                                     key={`gh-${idx}`}
@@ -537,7 +537,7 @@ export default function SampleFinderApp() {
                           className={`${i > 0 ? 'pt-16 mt-16 border-t-2 border-white' : ''} space-y-16 lg:space-y-20`}
                         >
                                                     {/* Album Info */}
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 relative mb-16">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 relative mb-20">
                             {/* Vertical Divider - only visible on large screens */}
                             <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             
@@ -647,11 +647,11 @@ export default function SampleFinderApp() {
                             
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group">
-                              <div className="absolute -top-10 left-0">
-                                <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
-                                  Play & Compare
-                                </span>
-                              </div>
+                                            <div className="absolute -top-12 left-0">
+                <span className="text-sm font-bold text-white">
+                  Play & Compare
+                </span>
+              </div>
                               <div className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
                                 <div className="aspect-video">
@@ -723,7 +723,7 @@ export default function SampleFinderApp() {
 
                       {/* Discover More - clearly separated section (wider than main) */}
                       {results.length > 0 && (
-                        <div className="mt-28 lg:mt-40 relative w-screen left-1/2 -translate-x-1/2">
+                        <div className="mt-32 lg:mt-48 relative w-screen left-1/2 -translate-x-1/2">
                           <div className="max-w-[90rem] mx-auto px-6">
                             <div className="h-px bg-white/5 mb-8"></div>
                             <h4 className="text-white/85 text-lg font-semibold mb-6">Discover more sampled tracks</h4>
