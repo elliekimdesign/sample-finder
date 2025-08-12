@@ -518,16 +518,9 @@ export default function SampleFinderApp() {
                           )}
                         </div>
 
-                        {/* Artist bio (from Wikipedia if available) */}
+                        {/* Artist bio (from Wikipedia if available) - single instance */}
                         {spotifyData?.artist?.bio && (
                           <div className="text-base text-white/90 leading-relaxed">
-                            {spotifyData.artist.bio}
-                          </div>
-                        )}
-
-                        {/* Short bio only; followers removed */}
-                        {spotifyData?.artist?.bio && (
-                          <div className="text-sm text-white/90 leading-relaxed">
                             {spotifyData.artist.bio}
                           </div>
                         )}
