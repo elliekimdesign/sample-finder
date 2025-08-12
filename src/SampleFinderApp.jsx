@@ -379,11 +379,18 @@ export default function SampleFinderApp() {
                           <p className="text-white/60 text-xs">{spotifyData?.track?.year || panelData?.year || ''}</p>
                         </div>
 
+                        {/* Artist bio (from Wikipedia if available) */}
+                        {spotifyData?.artist?.bio && (
+                          <div className="text-sm text-white/80 leading-relaxed">
+                            {spotifyData.artist.bio}
+                          </div>
+                        )}
+
                         {/* Genres / followers */}
                         {spotifyData?.artist && (
-                          <div className="text-xs text-white/70">
+                          <div className="text-xs text-white/70 space-y-1">
                             {spotifyData.artist.genres?.length > 0 && (
-                              <p className="mb-1">Genres: {spotifyData.artist.genres.slice(0, 5).join(', ')}</p>
+                              <p>Genres: {spotifyData.artist.genres.slice(0, 5).join(', ')}</p>
                             )}
                             {typeof spotifyData.artist.followers === 'number' && (
                               <p>Followers: {spotifyData.artist.followers.toLocaleString()}</p>

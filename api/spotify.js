@@ -2,6 +2,41 @@
 // Securely fetch Spotify app token and return track/artist metadata for a query
 
 let cachedToken = null; // { access_token, expires_at }
+const responseCache = new Map(); // key -> { data, expires }
+const RESPONSE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached(key) {
+  const hit = responseCache.get(key);
+  if (!hit) return null;
+  if (Date.now() > hit.expires) {
+    responseCache.delete(key);
+    return null;
+  }
+  return hit.data;
+}
+
+function setCached(key, data) {
+  responseCache.set(key, { data, expires: Date.now() + RESPONSE_TTL_MS });
+}
+
+function truncateBio(text) {
+  if (!text) return null;
+  // keep first sentence; fallback to 280 chars
+  const firstSentence = text.split(/(?<=\.)\s/)[0] || text;
+  const trimmed = firstSentence.length > 280 ? firstSentence.slice(0, 277) + '...' : firstSentence;
+  return trimmed;
+}
+
+async function fetchWithTimeout(url, opts = {}, timeoutMs = 1000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 async function getAppToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -71,13 +106,39 @@ module.exports = async function handler(req, res) {
     // 2) Artist details
     const artistId = track.artists?.[0]?.id;
     let artist = null;
-    if (artistId) {
-      const a = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const aData = await a.json();
-      if (a.ok) artist = aData;
-    }
+    // Fetch artist details and a short wiki summary in parallel (best-effort)
+    const artistNameFromTrack = track?.artists?.[0]?.name;
+    const [artistRes, wikiRes] = await Promise.all([
+      (async () => {
+        if (!artistId) return null;
+        const a = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const aData = await a.json();
+        if (a.ok) return aData;
+        return null;
+      })(),
+      (async () => {
+        try {
+          const name = artistNameFromTrack;
+          if (!name) return { bio: null, url: null };
+          const title = encodeURIComponent(name);
+          const w = await fetchWithTimeout(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {}, 1000);
+          if (!w.ok) return { bio: null, url: null };
+          const wData = await w.json();
+          return {
+            bio: truncateBio(wData?.extract || ''),
+            url: wData?.content_urls?.desktop?.page || null,
+          };
+        } catch {
+          return { bio: null, url: null };
+        }
+      })(),
+    ]);
+
+    artist = artistRes;
+    const artistBio = wikiRes?.bio || null;
+    const artistWikiUrl = wikiRes?.url || null;
 
     const payload = {
       track: {
@@ -100,12 +161,18 @@ module.exports = async function handler(req, res) {
             genres: artist.genres || [],
             followers: artist.followers?.total || 0,
             spotifyUrl: artist.external_urls?.spotify,
+            bio: artistBio,
+            wikipediaUrl: artistWikiUrl,
           }
         : null,
       attribution: 'Images & data from Spotify',
     };
 
+    // Cache and send
+    const cacheKey = `q:${q}`;
+    setCached(cacheKey, payload);
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
     res.statusCode = 200;
     res.end(JSON.stringify(payload));
   } catch (e) {
