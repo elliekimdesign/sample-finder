@@ -303,10 +303,10 @@ export default function SampleFinderApp() {
         youtube: "https://youtu.be/HVD4lnfz0-M?si=fqHGykEflGG9nbaC",
         thumbnail: "/sheknows.jpg", // Temporary thumbnail
         sampledFrom: {
-          title: "Temporary Sample",
-          artist: "Unknown Artist", 
-          year: 2000,
-          youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
+          title: "I Love U So",
+          artist: "Cassius",
+          year: 1999,
+          youtube: "https://youtu.be/NazVKnD-_sQ?si=-epMbz4ez53irk0Q&t=15",
           thumbnail: "/sheknows.jpg",
         },
       },
