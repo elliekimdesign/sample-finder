@@ -305,7 +305,7 @@ export default function SampleFinderApp() {
         youtube: "https://youtu.be/HVD4lnfz0-M?si=fqHGykEflGG9nbaC",
         thumbnail: "/sheknows.jpg", // Temporary thumbnail
         sampledFrom: {
-          title: "I Love U So",
+          title: "I <3 U SO",
           artist: "Cassius",
           year: 1999,
           youtube: "https://youtu.be/NazVKnD-_sQ?si=-epMbz4ez53irk0Q&t=16",
@@ -384,6 +384,14 @@ export default function SampleFinderApp() {
     if (panelSpotifyData) {
       console.log('👤 Artist data:', panelSpotifyData.artist);
       console.log('🎵 Track data:', panelSpotifyData.track);
+      console.log('🖼️ Images check:', {
+        artistImages: panelSpotifyData.artist?.images?.length || 0,
+        albumImages: panelSpotifyData.track?.album?.images?.length || 0,
+        bestImage: panelSpotifyData.artist?.bestImage,
+        firstArtistImage: panelSpotifyData.artist?.images?.[0]?.url,
+        firstAlbumImage: panelSpotifyData.track?.album?.images?.[0]?.url
+      });
+      console.log('🔍 Full API Response Structure:', JSON.stringify(panelSpotifyData, null, 2));
     }
   }, [panelSpotifyData]);
 
@@ -824,12 +832,21 @@ export default function SampleFinderApp() {
                         {/* Large cover on top (original style), details below */}
                         <div className="w-full rounded-lg overflow-hidden border border-white/15 bg-white/5">
                           {(() => {
-                            // Use the new bestImage field first, then fallback to original logic
+                            // Handle different API response structures
                             const bestImg = panelSpotifyData?.artist?.bestImage;
                             const artistImg = panelSpotifyData?.artist?.images?.[0]?.url;
                             const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
+                            
+                            // NEW: Handle flat response structure with coverUrl
+                            const coverUrl = panelSpotifyData?.coverUrl;
+                            
                             const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
-                            const src = bestImg || artistImg || albumImg || fallback;
+                            
+                            // Try to get image from main search results as backup
+                            const panelKey = `${panelData?.title}|${panelData?.artist}`;
+                            const mainResultImage = spotifyCovers[panelKey] || spotifyInfo[panelKey]?.track?.album?.images?.[0]?.url;
+                            
+                            const src = bestImg || artistImg || albumImg || coverUrl || mainResultImage || fallback;
                             
                             console.log('🖼️ Panel Image Debug:', {
                               bestImg,
@@ -877,7 +894,25 @@ export default function SampleFinderApp() {
 
                         {/* Artist information and bio */}
                         <div className="space-y-4">
-                          {/* Spotify stats */}
+                          {/* Show available info from flat structure */}
+                          {panelSpotifyData && (
+                            <div className="space-y-2">
+                              {panelSpotifyData.genres && panelSpotifyData.genres.length > 0 && (
+                                <div>
+                                  <span className="text-white/60 text-sm">Genres</span>
+                                  <div className="text-white font-medium">{panelSpotifyData.genres.join(', ')}</div>
+                                </div>
+                              )}
+                              {panelSpotifyData.artists && (
+                                <div>
+                                  <span className="text-white/60 text-sm">Artists</span>
+                                  <div className="text-white font-medium">{panelSpotifyData.artists.join(', ')}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Spotify stats (if available) */}
                           {panelSpotifyData?.artist && (
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               {panelSpotifyData.artist.followers > 0 && (
