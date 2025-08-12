@@ -122,6 +122,14 @@ export default async function handler(req, res) {
       res.statusCode = 404;
       return res.end(JSON.stringify({ error: 'No track found' }));
     }
+    
+    console.log('🎵 Spotify Track Data:', {
+      name: track.name,
+      artists: track.artists?.map(a => a.name),
+      albumName: track.album?.name,
+      albumImageCount: track.album?.images?.length || 0,
+      albumImages: track.album?.images
+    });
 
     // 2) Artist details
     const artistId = track.artists?.[0]?.id;
@@ -131,12 +139,26 @@ export default async function handler(req, res) {
     const [artistRes, wikiRes] = await Promise.all([
       (async () => {
         if (!artistId) return null;
-        const a = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const aData = await a.json();
-        if (a.ok) return aData;
-        return null;
+        try {
+          const a = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const aData = await a.json();
+          if (a.ok) {
+            console.log('🎨 Spotify Artist Data:', {
+              name: aData.name,
+              imageCount: aData.images?.length || 0,
+              images: aData.images,
+              genres: aData.genres
+            });
+            return aData;
+          }
+          console.error('❌ Artist fetch failed:', aData);
+          return null;
+        } catch (error) {
+          console.error('💥 Artist fetch error:', error);
+          return null;
+        }
       })(),
       (async () => {
         try {
