@@ -250,11 +250,11 @@ export default function SampleFinderApp() {
                 {/* Album Info (No Cards) */}
                 <div className="relative">
                   <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10"></div>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14">
                   
                     {/* Left Side - Current Hit (She Knows) */}
-                    <div className="lg:col-span-6">
-                      <div className="mb-4">
+                    <div className="space-y-4">
+                      <div>
                         <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Current Hit</div>
                         <div className="mt-1 h-px bg-white/12"></div>
                       </div>
@@ -281,8 +281,8 @@ export default function SampleFinderApp() {
                     </div>
 
                     {/* Right Side - Original Track (Bad Things) */}
-                    <div className="lg:col-span-6">
-                      <div className="mb-4">
+                    <div className="space-y-4">
+                      <div>
                         <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Original Track</div>
                         <div className="mt-1 h-px bg-white/12"></div>
                       </div>
@@ -313,9 +313,9 @@ export default function SampleFinderApp() {
                 {/* Video Player Cards */}
                 <div className="relative">
                   <div className="hidden lg:block absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10"></div>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
                     {/* Left Side - Current Hit Video */}
-                    <div className="relative group lg:col-span-6">
+                    <div className="relative group">
                       <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
                         <div className="aspect-video">
                           <iframe
@@ -333,7 +333,7 @@ export default function SampleFinderApp() {
                     </div>
 
                     {/* Right Side - Original Track Video */}
-                    <div className="relative group lg:col-start-7 lg:col-span-6">
+                    <div className="relative group">
                       <div className="rounded-2xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-70 md:scale-70 group-hover:scale-100 opacity-60 group-hover:opacity-100">
                         <div className="aspect-video">
                           <iframe
