@@ -18,6 +18,17 @@ export default function SampleFinderApp() {
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [spotifyError, setSpotifyError] = useState('');
 
+  // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
+  const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : '');
+
+  async function fetchSpotifyJson(url) {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok) throw new Error(`Spotify API ${res.status}`);
+    if (!ct.includes('application/json')) throw new Error('Non-JSON response');
+    return res.json();
+  }
+
   const openPanel = (data) => {
     setPanelData(data);
     setPanelOpen(true);
@@ -27,19 +38,30 @@ export default function SampleFinderApp() {
     setSpotifyLoading(true);
     setSpotifyError('');
     setSpotifyData(null);
-    fetch(`/api/spotify/search?q=${encodeURIComponent(query)}`)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`Spotify API ${r.status}`);
-        return r.json();
-      })
-      .then((json) => {
-        setSpotifyData(json);
-      })
-      .catch((e) => {
-        // In local Vite dev, /api may not exist; fail silently
+    (async () => {
+      try {
+        const q = encodeURIComponent(query);
+        const endpoints = [
+          `${apiBase}/api/spotify/search?q=${q}`,
+          `${apiBase}/api/spotify?q=${q}`,
+        ];
+        let data = null;
+        for (const ep of endpoints) {
+          try {
+            data = await fetchSpotifyJson(ep);
+            if (data) break;
+          } catch (err) {
+            // try next endpoint
+          }
+        }
+        if (!data) throw new Error('No JSON response');
+        setSpotifyData(data);
+      } catch (e) {
         setSpotifyError(e.message || 'Failed to load Spotify data');
-      })
-      .finally(() => setSpotifyLoading(false));
+      } finally {
+        setSpotifyLoading(false);
+      }
+    })();
   };
 
   const closePanel = () => setPanelOpen(false);

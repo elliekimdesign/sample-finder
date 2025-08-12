@@ -73,7 +73,7 @@ async function getAppToken() {
   return cachedToken.access_token;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   try {
     const q = (req.query && req.query.q) || (new URL(req.url, 'http://x').searchParams.get('q')) || '';
     if (!q) {
@@ -180,6 +180,6 @@ module.exports = async function handler(req, res) {
     res.statusCode = 500;
     res.end(JSON.stringify({ error: e.message || 'Internal error' }));
   }
-};
+}
 
 
