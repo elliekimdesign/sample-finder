@@ -83,6 +83,17 @@ async function getAppToken() {
 }
 
 export default async function handler(req, res) {
+  // Add CORS headers for local development
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  
+  // Handle preflight request
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 200;
+    return res.end();
+  }
+
   try {
     const q = (req.query && req.query.q) || (new URL(req.url, 'http://x').searchParams.get('q')) || '';
     if (!q) {
