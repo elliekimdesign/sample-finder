@@ -812,6 +812,9 @@ export default function SampleFinderApp() {
                               <div>Artist images: {panelSpotifyData.artist?.images?.length || 0}</div>
                               <div>Album images: {panelSpotifyData.track?.album?.images?.length || 0}</div>
                               <div>Best image: {panelSpotifyData.artist?.bestImage ? 'FOUND' : 'NULL'}</div>
+                              <div>Bio: {panelSpotifyData.artist?.bio ? 'FOUND' : 'NULL'}</div>
+                              <div>Description: {panelSpotifyData.artist?.description ? 'FOUND' : 'NULL'}</div>
+                              <div>Followers: {panelSpotifyData.artist?.followers || 0}</div>
                               {panelSpotifyData.artist?.bestImage && (
                                 <div className="text-xs mt-2 break-all">Best IMG: {panelSpotifyData.artist.bestImage.substring(0, 50)}...</div>
                               )}
@@ -872,12 +875,33 @@ export default function SampleFinderApp() {
                           )}
                         </div>
 
-                        {/* Artist bio (from Wikipedia if available) - single instance */}
-                        {panelSpotifyData?.artist?.bio && (
-                          <div className="text-base text-white/90 leading-relaxed">
-                            {panelSpotifyData.artist.bio}
-                          </div>
-                        )}
+                        {/* Artist information and bio */}
+                        <div className="space-y-4">
+                          {/* Spotify stats */}
+                          {panelSpotifyData?.artist && (
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              {panelSpotifyData.artist.followers > 0 && (
+                                <div>
+                                  <span className="text-white/60">Followers</span>
+                                  <div className="text-white font-medium">{panelSpotifyData.artist.followers.toLocaleString()}</div>
+                                </div>
+                              )}
+                              {panelSpotifyData.artist.popularity > 0 && (
+                                <div>
+                                  <span className="text-white/60">Popularity</span>
+                                  <div className="text-white font-medium">{panelSpotifyData.artist.popularity}/100</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Bio or description */}
+                          {(panelSpotifyData?.artist?.bio || panelSpotifyData?.artist?.description) && (
+                            <div className="text-base text-white/90 leading-relaxed">
+                              {panelSpotifyData.artist.bio || panelSpotifyData.artist.description}
+                            </div>
+                          )}
+                        </div>
 
                         {/* Attribution-only (no logo/links) */}
                         {panelSpotifyData && (

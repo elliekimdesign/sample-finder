@@ -151,10 +151,15 @@ export default async function handler(req, res) {
           )
         );
 
-        // 3) Find first artist with images
+        // 3) Find first artist with images and return detailed artist info
         for (const a of artists) {
           if (a.status === 'fulfilled' && Array.isArray(a.value.images) && a.value.images.length) {
             console.log('✅ Found artist with images:', a.value.name, a.value.images.length);
+            console.log('🎨 Artist details:', {
+              genres: a.value.genres,
+              followers: a.value.followers?.total,
+              popularity: a.value.popularity
+            });
             return {
               image: a.value.images[0].url,
               artist: a.value
@@ -255,11 +260,14 @@ export default async function handler(req, res) {
             images: artist.images || [],
             genres: artist.genres || [],
             followers: artist.followers?.total || 0,
+            popularity: artist.popularity || 0,
             spotifyUrl: artist.external_urls?.spotify,
             bio: artistBio,
             wikipediaUrl: artistWikiUrl,
             // Add the best image found
             bestImage: imageResult?.image,
+            // Add comprehensive artist description
+            description: artistBio || `${artist.name} is an artist with ${artist.followers?.total?.toLocaleString() || 0} followers on Spotify.${artist.genres?.length ? ` Known for: ${artist.genres.slice(0, 3).join(', ')}.` : ''}`,
           }
         : null,
       attribution: 'Images & data from Spotify',
