@@ -364,23 +364,38 @@ export default function SampleFinderApp() {
             console.log('🖼️ Artist images available:', info.artist?.images?.length || 0);
             console.log('📀 Album images available:', info.track?.album?.images?.length || 0);
             
-            // If no artist images, try to fetch artist directly
+            // If no artist images, try more specific searches
             if ((!info.artist?.images || info.artist.images.length === 0) && info.artists && info.artists.length > 0) {
-              console.log('🔍 No artist images found, trying direct artist search...');
+              console.log('🔍 No artist images found, trying more specific searches...');
               try {
-                // Try searching for the first artist individually
-                const artistQuery = encodeURIComponent(info.artists[0]);
-                const artistUrl = `${apiBase}/api/spotify/search?q=${artistQuery}`;
-                const artistResponse = await fetch(artistUrl);
-                const artistData = await artistResponse.json();
+                // Try multiple search strategies
+                const searches = [
+                  // 1. Search with track name + artist name for better context
+                  `${panelData.title} ${info.artists[0]}`,
+                  // 2. Search with artist name + genre context
+                  `${info.artists[0]} ${info.genres?.[0] || ''}`,
+                  // 3. Just artist name as fallback
+                  info.artists[0]
+                ];
                 
-                if (artistData?.artist?.images?.length > 0) {
-                  console.log('🎨 Found artist images via direct search!', artistData.artist.images.length);
-                  // Merge artist images into the main response
-                  info.artist = artistData.artist;
+                for (const searchQuery of searches) {
+                  const artistQuery = encodeURIComponent(searchQuery.trim());
+                  const artistUrl = `${apiBase}/api/spotify/search?q=${artistQuery}`;
+                  const artistResponse = await fetch(artistUrl);
+                  const artistData = await artistResponse.json();
+                  
+                  if (artistData?.artist?.images?.length > 0) {
+                    console.log('🎨 Found artist images with query:', searchQuery, '- Images:', artistData.artist.images.length);
+                    // Verify this is likely the right artist by checking if it matches our genre/context
+                    if (artistData.artist.name.toLowerCase().includes(info.artists[0].toLowerCase()) ||
+                        info.artists[0].toLowerCase().includes(artistData.artist.name.toLowerCase())) {
+                      info.artist = artistData.artist;
+                      break;
+                    }
+                  }
                 }
               } catch (artistError) {
-                console.error('❌ Artist direct search failed:', artistError);
+                console.error('❌ Artist search failed:', artistError);
               }
             }
             
@@ -824,7 +839,9 @@ export default function SampleFinderApp() {
       <div className="flex items-center justify-between px-5 pt-8 pb-4 border-b border-white/15">
         <div>
           <p className="text-sm text-white/80 uppercase tracking-wide mb-3">About Artist</p>
-          <h3 className="text-4xl font-semibold text-white">{panelData?.artist || 'Artist'}</h3>
+          <h3 className="text-4xl font-semibold text-white">
+            {panelSpotifyData?.artists?.[0] || panelData?.artist?.split(',')[0]?.trim() || 'Artist'}
+          </h3>
         </div>
         <button onClick={closePanel} className="p-2 rounded-md hover:bg-gradient-to-b from-transparent via-white/5 to-transparent text-white/80 hover:text-white transition-colors" aria-label="Close">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -832,28 +849,8 @@ export default function SampleFinderApp() {
       </div>
                       {/* Body */}
                       <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-                        {/* ALWAYS VISIBLE DEBUG BOX */}
-                        <div className="sticky top-0 z-50 text-sm text-yellow-300 p-4 bg-yellow-900/80 border border-yellow-500/50 rounded-lg shadow-lg mb-4">
-                          <div className="font-bold">🐛 DEBUG PANEL</div>
-                          <div>panelSpotifyData: {panelSpotifyData ? 'EXISTS' : 'NULL'}</div>
-                          <div>panelOpen: {panelOpen ? 'TRUE' : 'FALSE'}</div>
-                          <div>panelData: {panelData ? 'EXISTS' : 'NULL'}</div>
-                          {panelSpotifyData && (
-                            <>
-                              <div>Artist images: {panelSpotifyData.artist?.images?.length || 0}</div>
-                              <div>Album images: {panelSpotifyData.track?.album?.images?.length || 0}</div>
-                              <div>Best image: {panelSpotifyData.artist?.bestImage ? 'FOUND' : 'NULL'}</div>
-                              <div>Bio: {panelSpotifyData.artist?.bio ? 'FOUND' : 'NULL'}</div>
-                              <div>Description: {panelSpotifyData.artist?.description ? 'FOUND' : 'NULL'}</div>
-                              <div>Followers: {panelSpotifyData.artist?.followers || 0}</div>
-                              {panelSpotifyData.artist?.bestImage && (
-                                <div className="text-xs mt-2 break-all">Best IMG: {panelSpotifyData.artist.bestImage.substring(0, 50)}...</div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        {/* Large cover on top (original style), details below */}
-                        <div className="w-full rounded-lg overflow-hidden border border-white/15 bg-white/5">
+                        {/* Artist image */}
+                        <div className="w-full rounded-md overflow-hidden bg-white/5">
                           {(() => {
                             // Handle different API response structures
                             const bestImg = panelSpotifyData?.artist?.bestImage;
@@ -892,32 +889,45 @@ export default function SampleFinderApp() {
                           })()}
                         </div>
                         
-                        {/* Small album art below artist image */}
-                        {(() => {
-                          const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
-                          if (albumImg) {
-                            return (
-                              <div className="flex justify-start">
-                                <div className="w-16 h-16 rounded-md overflow-hidden border border-white/10 bg-white/5">
-                                  <img src={albumImg} alt="Album cover" className="w-full h-full object-cover" />
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-                        <div className="space-y-1 min-w-0">
-                          <h4 className="text-white text-xl font-semibold truncate">{panelSpotifyData?.track?.name || panelData?.title || 'Title'}</h4>
-                          <p className="text-white/90 text-base truncate">{panelSpotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
-                          <p className="text-white/70 text-sm">{panelSpotifyData?.track?.year || panelData?.year || ''}</p>
-                          {panelSpotifyData?.artist?.genres?.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              {panelSpotifyData.artist.genres.slice(0, 5).map((g, idx) => (
-                                <span key={idx} className="px-2 py-0.5 text-[11px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
-                              ))}
-                            </div>
-                          )}
+                        {/* Album art + Song info side by side */}
+                        <div className="flex gap-4 items-center">
+                          {/* Small album art (left) - slight rounded corners */}
+                          <div className="w-20 h-20 rounded-md overflow-hidden bg-white/5 flex-shrink-0">
+                            {(() => {
+                              const coverUrl = panelSpotifyData?.coverUrl;
+                              const albumImg = panelSpotifyData?.track?.album?.images?.[0]?.url;
+                              const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
+                              const panelKey = `${panelData?.title}|${panelData?.artist}`;
+                              const mainResultImage = spotifyCovers[panelKey] || spotifyInfo[panelKey]?.track?.album?.images?.[0]?.url;
+                              
+                              const albumSrc = coverUrl || albumImg || mainResultImage || fallback;
+                              
+                              return (
+                                <img src={albumSrc} alt="Album" className="w-full h-full object-cover" />
+                              );
+                            })()}
+                          </div>
+                          
+                          {/* Song info (right) */}
+                          <div className="flex-1 space-y-1">
+                            <h4 className="text-xl font-semibold text-white tracking-tight leading-tight">{panelData?.title || 'Unknown Title'}</h4>
+                            <p className="text-base text-white/85 font-medium tracking-wide">
+                              {panelSpotifyData?.artists?.join(', ') || panelData?.artist || 'Unknown Artist'}
+                            </p>
+                            <p className="text-sm text-white/65 font-normal">{panelData?.year || 'Unknown Year'}</p>
+                          </div>
                         </div>
+
+                        {/* Genre tags */}
+                        {panelSpotifyData?.genres && panelSpotifyData.genres.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {panelSpotifyData.genres.map((genre, index) => (
+                              <span key={index} className="px-3 py-1.5 text-xs font-medium bg-white/8 text-white/75 rounded-full tracking-wide border border-white/10">
+                                {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Artist information and bio */}
                         <div className="space-y-4">
@@ -930,36 +940,28 @@ export default function SampleFinderApp() {
                                   <div className="text-white font-medium">{panelSpotifyData.genres.join(', ')}</div>
                                 </div>
                               )}
-                              {panelSpotifyData.artists && (
+                              {panelSpotifyData.artists && panelSpotifyData.artists.length > 0 && (
                                 <div>
-                                  <span className="text-white/60 text-sm">Artists</span>
-                                  <div className="text-white font-medium">{panelSpotifyData.artists.join(', ')}</div>
+                                  <span className="text-white/60 text-sm">Artist</span>
+                                  <div className="text-white font-medium">{panelSpotifyData.artists[0]}</div>
                                 </div>
                               )}
                             </div>
                           )}
                           
                           {/* Spotify stats (if available) */}
-                          {panelSpotifyData?.artist && (
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              {panelSpotifyData.artist.followers > 0 && (
-                                <div>
-                                  <span className="text-white/60">Followers</span>
-                                  <div className="text-white font-medium">{panelSpotifyData.artist.followers.toLocaleString()}</div>
-                                </div>
-                              )}
-                              {panelSpotifyData.artist.popularity > 0 && (
-                                <div>
-                                  <span className="text-white/60">Popularity</span>
-                                  <div className="text-white font-medium">{panelSpotifyData.artist.popularity}/100</div>
-                                </div>
-                              )}
+                          {panelSpotifyData?.artist && panelSpotifyData.artist.popularity > 0 && (
+                            <div className="text-sm">
+                              <div>
+                                <span className="text-white/60 font-medium tracking-wide text-xs uppercase">Popularity</span>
+                                <div className="text-white font-semibold text-base tracking-tight">{panelSpotifyData.artist.popularity}/100</div>
+                              </div>
                             </div>
                           )}
                           
                           {/* Bio or description */}
                           {(panelSpotifyData?.artist?.bio || panelSpotifyData?.artist?.description) && (
-                            <div className="text-base text-white/90 leading-relaxed">
+                            <div className="text-base text-white/85 leading-relaxed font-normal tracking-normal">
                               {panelSpotifyData.artist.bio || panelSpotifyData.artist.description}
                             </div>
                           )}

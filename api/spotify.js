@@ -128,7 +128,9 @@ export default async function handler(req, res) {
       artists: track.artists?.map(a => a.name),
       albumName: track.album?.name,
       albumImageCount: track.album?.images?.length || 0,
-      albumImages: track.album?.images
+      albumImages: track.album?.images,
+      trackId: track.id,
+      artistIds: track.artists?.map(a => a.id)
     });
 
     // 2) Get best artist image and primary artist details - DEFINE FUNCTION FIRST
