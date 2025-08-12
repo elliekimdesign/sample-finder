@@ -491,30 +491,31 @@ export default function SampleFinderApp() {
                       </div>
                       {/* Body */}
                       <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-                        {/* Small cover left, details right (reverted), with larger text */}
-                        <div className="flex items-start gap-4">
-                          <div className="shrink-0 rounded-lg overflow-hidden border border-white/15 bg-white/5">
-                            {(() => {
-                              const artistImg = spotifyData?.artist?.images?.[0]?.url;
-                              const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
-                              const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
-                              const src = artistImg || albumImg || fallback;
-                              return <img src={src} alt="Artist or album" className="w-24 h-24 object-cover" />;
-                            })()}
-                          </div>
-                          <div className="flex-1 space-y-1 min-w-0">
-                            <h4 className="text-white text-xl font-semibold truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</h4>
-                            <p className="text-white/90 text-base truncate">{spotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
-                            <p className="text-white/70 text-sm">{spotifyData?.track?.year || panelData?.year || ''}</p>
-                            {/* Genres as subtle chips below */}
-                            {spotifyData?.artist?.genres?.length > 0 && (
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                {spotifyData.artist.genres.slice(0, 5).map((g, idx) => (
-                                  <span key={idx} className="px-2 py-0.5 text-[11px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
-                                ))}
+                        {/* Large cover on top (original style), details below */}
+                        <div className="w-full rounded-lg overflow-hidden border border-white/15 bg-white/5">
+                          {(() => {
+                            const artistImg = spotifyData?.artist?.images?.[0]?.url;
+                            const albumImg = spotifyData?.track?.album?.images?.[0]?.url;
+                            const fallback = panelData?.image && panelData.image.trim() !== '' ? panelData.image : '/jcole.jpg';
+                            const src = artistImg || albumImg || fallback;
+                            return (
+                              <div className="w-full aspect-[4/3]">
+                                <img src={src} alt="Artist or album" className="w-full h-full object-cover" />
                               </div>
-                            )}
-                          </div>
+                            );
+                          })()}
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <h4 className="text-white text-xl font-semibold truncate">{spotifyData?.track?.name || panelData?.title || 'Title'}</h4>
+                          <p className="text-white/90 text-base truncate">{spotifyData?.track?.artists?.map((a) => a.name).join(', ') || panelData?.artist || 'Artist'}</p>
+                          <p className="text-white/70 text-sm">{spotifyData?.track?.year || panelData?.year || ''}</p>
+                          {spotifyData?.artist?.genres?.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {spotifyData.artist.genres.slice(0, 5).map((g, idx) => (
+                                <span key={idx} className="px-2 py-0.5 text-[11px] rounded-full bg-white/8 border border-white/15 text-white/85">{g}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {/* Artist bio (from Wikipedia if available) */}
