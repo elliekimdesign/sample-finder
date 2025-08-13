@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Custom font family */
 .font-bitcount {
   font-family: 'Bitcount Prop Single', monospace;
@@ -81,5 +91,20 @@
     opacity: 1;
     filter: blur(0px);
     transform: scale(1.01);
+  }
+}
+
+@keyframes slideUpFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.8);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
   }
 }
