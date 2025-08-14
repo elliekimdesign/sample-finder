@@ -91,7 +91,8 @@ export default function SampleFinderApp() {
   function convertApiResponseToLocalFormat(apiResponse) {
     const { query_song, main_sample, status } = apiResponse;
     
-    if (status === 'unknown' || !query_song?.title) {
+    // Only return null if we couldn't identify the song itself
+    if (!query_song?.title) {
       return null;
     }
 
