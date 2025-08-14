@@ -1300,12 +1300,13 @@ export default function SampleFinderApp() {
                                     const extractVideoId = (url) => {
                                       if (url.includes('youtu.be/')) {
                                         const parts = url.split('youtu.be/')[1];
-                                        const videoId = parts.split('?')[0];
+                                        const videoId = parts ? parts.split('?')[0] : null;
                                         const timeMatch = url.match(/[?&]t=(\d+)/);
                                         const startTime = timeMatch ? timeMatch[1] : null;
                                         return { videoId, startTime };
                                       } else {
-                                        const videoId = url.split('v=')[1].split('&')[0];
+                                        const urlParts = url.split('v=')[1];
+                                        const videoId = urlParts ? urlParts.split('&')[0] : null;
                                         return { videoId, startTime: null };
                                       }
                                     };
@@ -1334,12 +1335,13 @@ export default function SampleFinderApp() {
                                     const extractVideoId = (url) => {
                                       if (url.includes('youtu.be/')) {
                                         const parts = url.split('youtu.be/')[1];
-                                        const videoId = parts.split('?')[0];
+                                        const videoId = parts ? parts.split('?')[0] : null;
                                         const timeMatch = url.match(/[?&]t=(\d+)/);
                                         const startTime = timeMatch ? timeMatch[1] : null;
                                         return { videoId, startTime };
                                       } else {
-                                        const videoId = url.split('v=')[1].split('&')[0];
+                                        const urlParts = url.split('v=')[1];
+                                        const videoId = urlParts ? urlParts.split('&')[0] : null;
                                         return { videoId, startTime: null };
                                       }
                                     };
@@ -1536,7 +1538,7 @@ export default function SampleFinderApp() {
                                 <div>
                                   <span className="text-white/60 text-sm">Genres</span>
                                   <div className="flex flex-wrap gap-2 mt-2">
-                                    {panelSpotifyData.genres.map((genre, index) => (
+                                    {(panelSpotifyData?.genres || []).map((genre, index) => (
                                       <span key={index} className="px-3 py-1.5 text-xs font-medium bg-white/8 text-white/75 rounded-full tracking-wide border border-white/10">
                                         {genre.charAt(0).toUpperCase() + genre.slice(1)}
                                       </span>
@@ -1547,7 +1549,7 @@ export default function SampleFinderApp() {
                               {panelSpotifyData.artists && panelSpotifyData.artists.length > 0 && (
                                 <div>
                                   <span className="text-white/60 text-sm">Artist</span>
-                                  <div className="text-white font-medium">{panelSpotifyData.artists[0]}</div>
+                                  <div className="text-white font-medium">{panelSpotifyData?.artists?.[0] || 'Unknown Artist'}</div>
                                 </div>
                               )}
                             </div>
