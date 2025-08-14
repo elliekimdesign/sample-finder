@@ -82,6 +82,11 @@ export default function SampleFinderApp() {
     }
   }
 
+  // Helper function to safely join artists array
+  function safeJoinArtists(artists) {
+    return Array.isArray(artists) && artists.length > 0 ? artists.join(', ') : null;
+  }
+
   // Convert API response to local DB format
   function convertApiResponseToLocalFormat(apiResponse) {
     const { query_song, main_sample, status } = apiResponse;
@@ -1122,7 +1127,7 @@ export default function SampleFinderApp() {
                               )}
                             </div>
                             <p className="text-lg text-white/70">
-                              by {(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}
+                              by {safeJoinArtistssafeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}
                             </p>
                             {item.sampledFrom && (
                               <p className="text-sm text-white/50 mt-2">
@@ -1164,7 +1169,7 @@ export default function SampleFinderApp() {
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
-                                  artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
+                                  artist: safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist,
                                   year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
@@ -1183,13 +1188,13 @@ export default function SampleFinderApp() {
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
-                                  artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
+                                  artist: safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist,
                                   year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                 })}>
                                   <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
-                                  <p className="text-base text-gray-300">{(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}</p>
+                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}</p>
                                   <p className="text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
                                   
                                   {/* Genre Tags */}
@@ -1227,7 +1232,7 @@ export default function SampleFinderApp() {
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
-                                  artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
+                                  artist: safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist,
                                   year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
@@ -1246,13 +1251,13 @@ export default function SampleFinderApp() {
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
-                                  artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
+                                  artist: safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist,
                                   year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                 })}>
                                   <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
-                                  <p className="text-base text-gray-300">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist}</p>
+                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist}</p>
                                   <p className="text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
                                   
                                   {/* Genre Tags */}
@@ -1476,7 +1481,7 @@ export default function SampleFinderApp() {
                                     <div>
                                       <p className="text-sm text-white/90 uppercase tracking-wide mb-2">About Artist</p>
                                       <h3 className="text-3xl font-semibold text-white drop-shadow-lg">
-                                        {panelSpotifyData?.artists?.[0] || panelData?.artist?.split(',')[0]?.trim() || 'Artist'}
+                                        {panelSpotifyData?.artists?.[0] || (panelData?.artist ? panelData.artist.split(',')[0]?.trim() : 'Artist')}
                                       </h3>
                                     </div>
                                     <button onClick={closePanel} className="p-2 rounded-md hover:bg-white/10 text-white/90 hover:text-white transition-colors backdrop-blur-sm" aria-label="Close">
@@ -1514,7 +1519,7 @@ export default function SampleFinderApp() {
                           <div className="flex-1 space-y-1">
                             <h4 className="text-xl font-semibold text-white tracking-tight leading-tight">{panelData?.title || 'Unknown Title'}</h4>
                             <p className="text-base text-white/85 font-medium tracking-wide">
-                              {panelSpotifyData?.artists?.join(', ') || panelData?.artist || 'Unknown Artist'}
+                              {safeJoinArtists(panelSpotifyData?.artists) || panelData?.artist || 'Unknown Artist'}
                             </p>
                             <p className="text-sm text-white/65 font-normal">{panelData?.year || 'Unknown Year'}</p>
                           </div>
