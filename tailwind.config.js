@@ -1,10 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
+    "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
+      fontFamily: {
+        notoSerif: ['"Noto Serif"', 'serif'],
+        jost: ['"Jost"', 'sans-serif'],
+        libreCaslon: ['"Libre Caslon Text"', 'serif'],
+      },
       animation: {
         'textGlow': 'textGlow 5s ease-in-out infinite',
       },

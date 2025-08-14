@@ -24,6 +24,17 @@ export default function SampleFinderApp() {
   const [dominantColors, setDominantColors] = useState({}); // key -> { r,g,b }
   const [genrePool, setGenrePool] = useState([]); // unique list of genres from Spotify
   const [showAllGenres, setShowAllGenres] = useState(false); // 장르 더보기 상태
+  const [selectedCategory, setSelectedCategory] = useState(null); // 선택된 카테고리 ('tracks', 'artists', etc.)
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false); // 검색이 실행되었는지 추적
+  const [discoverPage, setDiscoverPage] = useState(0); // Discover 섹션 페이지 인덱스
+  const [isDirectAlbumClick, setIsDirectAlbumClick] = useState(false); // 앨범아트 직접 클릭인지 추적
+  
+  // Sample API integration states
+  const [sampleApiLoading, setSampleApiLoading] = useState(false);
+  const [sampleApiError, setSampleApiError] = useState('');
+  const [lastApiQuery, setLastApiQuery] = useState('');
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
   const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : 'https://samplr-red.vercel.app')));
@@ -34,6 +45,78 @@ export default function SampleFinderApp() {
     if (!res.ok) throw new Error(`Spotify API ${res.status}`);
     if (!ct.includes('application/json')) throw new Error('Non-JSON response');
     return res.json();
+  }
+
+  // Fetch sample identification from OpenAI API
+  async function fetchSampleIdentification(query) {
+    try {
+      setSampleApiLoading(true);
+      setSampleApiError('');
+      setLastApiQuery(query);
+      
+      console.log('🤖 Calling Sample API for:', query);
+      
+      const response = await fetch(`${apiBase}/api/samples`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ query })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Sample API ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('🎵 Sample API Response:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Sample API Error:', error);
+      setSampleApiError(error.message);
+      throw error;
+    } finally {
+      setSampleApiLoading(false);
+    }
+  }
+
+  // Convert API response to local DB format
+  function convertApiResponseToLocalFormat(apiResponse) {
+    const { query_song, main_sample, status } = apiResponse;
+    
+    if (status === 'unknown' || !query_song?.title) {
+      return null;
+    }
+
+    // Create a track object that matches local DB structure
+    const track = {
+      title: query_song.title,
+      artist: query_song.artist || 'Unknown Artist',
+      year: new Date().getFullYear(), // Default to current year
+      youtube: '', // Will be populated by Spotify search if needed
+      thumbnail: '', // Will be populated by Spotify search
+      isApiResult: true, // Flag to indicate this came from API
+      apiConfidence: main_sample?.confidence || 0
+    };
+
+    // Add sample information if available
+    if (main_sample?.title && main_sample.title !== 'none' && main_sample.confidence > 0) {
+      track.sampledFrom = {
+        title: main_sample.title,
+        artist: main_sample.artist || 'Unknown Artist',
+        year: null, // API doesn't provide year for samples
+        youtube: '',
+        thumbnail: '',
+        note: main_sample.note
+      };
+    } else if (main_sample?.note) {
+      // Store the note even if no sample was identified
+      track.apiNote = main_sample.note;
+    }
+
+    return [track]; // Return as array to match local DB format
   }
 
   // Lightweight dominant color extraction using canvas (best-effort)
@@ -266,135 +349,156 @@ export default function SampleFinderApp() {
     return () => window.removeEventListener('mousemove', updateMousePosition);
   }, []);
 
-  const sampleDB = {
-    "she knows": [
-      {
-        title: "She Knows",
-        artist: "J. Cole",
-        year: 2014,
-        youtube: "https://youtu.be/jYdaQJzcAcw?si=lr20a6NH9pP3xEmj&t=10",
-        thumbnail: "/sheknows.jpg",
-        sampledFrom: {
-                      title: "Bad Things",
-                      artist: "Cults",
-                      year: 2011,
-                      youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
-          thumbnail: "/badthings.jpg",
-        },
-      },
-    ],
-    "power": [
-    {
-        title: "Power",
-        artist: "Kanye West",
-        year: 2010,
-      youtube: "https://www.youtube.com/watch?v=L53gjP-TtGE",
-        thumbnail: "/sheknows.jpg", // 임시로 기존 이미지 사용
-      sampledFrom: {
-          title: "21st Century Schizoid Man",
-          artist: "King Crimson",
-          year: 1969,
-        youtube: "https://www.youtube.com/watch?v=YF1R0hc5QpQ",
-          thumbnail: "https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb6a9", // King Crimson 실제 앨범아트
-      },
-    },
-      ],
-    "why i love you": [
-      {
-        title: "Why I Love You",
-        artist: "Kanye West",
-        year: 2011,
-        youtube: "https://youtu.be/HVD4lnfz0-M?si=fqHGykEflGG9nbaC",
-        thumbnail: "/badthings.jpg", // 임시로 기존 이미지 사용
-        sampledFrom: {
-          title: "I <3 U SO",
-          artist: "Cassius",
-          year: 1999,
-          youtube: "https://youtu.be/NazVKnD-_sQ?si=-epMbz4ez53irk0Q&t=16",
-          thumbnail: "https://i.scdn.co/image/ab67616d0000b2738bffce1e80c5a7b0e74aa1c4", // Cassius 앨범아트
-        },
-      },
-    ],
-    "i love u so": [
-      {
-        title: "I Love U So",
-        artist: "Cassius",
-        year: 1999,
-        youtube: "https://youtu.be/NazVKnD-_sQ?si=NKE5iW5PH2uwgWOO&t=15",
-        thumbnail: "/sheknows.jpg", // Temporary thumbnail
-        sampledFrom: {
-          title: "Temporary Sample",
-          artist: "Unknown Artist", 
-          year: 2000,
-          youtube: "https://www.youtube.com/watch?v=n1WSC99ANnQ",
-          thumbnail: "/sheknows.jpg",
-      },
-    },
-  ],
-    "rapper's delight": [
-      {
-        title: "Rapper's Delight",
-        artist: "Sugarhill Gang",
-        year: 1979,
-        youtube: "https://www.youtube.com/watch?v=rKTUAESacQM",
-        thumbnail: "/sheknows.jpg", // 임시로 기존 이미지 사용
-        sampledFrom: {
-          title: "Good Times",
-          artist: "Chic",
-          year: 1979,
-          youtube: "https://www.youtube.com/watch?v=8rdwHkSYLzI",
-          thumbnail: "https://i.scdn.co/image/ab67616d0000b27326f7f19c7f0381e56a96a0cc", // Chic 실제 앨범아트
-        },
-      },
-    ],
+  // All sample data now comes from AI API - no local database needed
 
+  // Generate suggestions based on current query
+  const generateSuggestions = (searchTerm) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    // For now, show simple suggestions. Could be enhanced with AI-powered suggestions later
+    const baseSuggestions = [
+      'Flashing Lights Kanye',
+      'Halo Beyoncé', 
+      'Stan Eminem',
+      'California Love 2Pac',
+      'Through the Wire',
+      'Power Kanye West'
+    ];
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const matchingSuggestions = baseSuggestions.filter(suggestion =>
+      suggestion.toLowerCase().includes(lowerSearchTerm)
+    ).slice(0, 6);
+    
+    setSuggestions(matchingSuggestions);
+    setShowSuggestions(matchingSuggestions.length > 0);
+  };
 
-    "california love": [
-      {
-        title: "California Love",
-        artist: "2Pac ft. Dr. Dre",
-        year: 1995,
-        youtube: "https://www.youtube.com/watch?v=5wBTdfAkqGU",
-        thumbnail: "/badthings.jpg", // 임시로 기존 이미지 사용
-        sampledFrom: {
-          title: "Woman to Woman",
-          artist: "Joe Cocker",
-          year: 1972,
-          youtube: "https://www.youtube.com/watch?v=VY__ScowUMQ",
-          thumbnail: "https://i.scdn.co/image/ab67616d0000b273e56db4aa81cbee5dc6bb7b8c", // Joe Cocker 앨범아트
-        },
-      },
-    ],
-    "through the wire": [
-      {
-        title: "Through the Wire",
-        artist: "Kanye West",
-        year: 2003,
-        youtube: "https://www.youtube.com/watch?v=uvb-1wjAtk4",
-        thumbnail: "/sheknows.jpg", // 임시로 기존 이미지 사용
-        sampledFrom: {
-          title: "Through the Fire",
-          artist: "Chaka Khan",
-          year: 1984,
-          youtube: "https://www.youtube.com/watch?v=ru8IEllm5wo",
-          thumbnail: "https://i.scdn.co/image/ab67616d0000b273bb5a17e929a5cb4cfd84bf2a", // Chaka Khan 앨범아트
-      },
-    },
-  ],
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    generateSuggestions(value);
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setQuery(suggestion);
+    setShowSuggestions(false);
+    // Trigger search with the selected suggestion
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} };
+      handleSearchWithTerm(suggestion, fakeEvent);
+    }, 100);
+  };
+
+  const handleSearchWithTerm = (searchTerm, e) => {
+    e.preventDefault();
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    
+    // Always clear the selected category when doing a new search
+    setSelectedCategory(null);
+    setShowSuggestions(false);
+    setDiscoverPage(0); // Reset discover section to first page
+    setIsDirectAlbumClick(false); // Reset album click flag
+    
+    // If search term is empty, don't search
+    if (!normalizedSearchTerm) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    
+    // Mark that a search has been performed
+    setHasSearched(true);
+    
+    // Always use AI API for all searches
+    console.log('🤖 Using AI API for search:', searchTerm);
+    
+    // Call the sample identification API
+    (async () => {
+      try {
+        const apiResponse = await fetchSampleIdentification(searchTerm);
+        const convertedResults = convertApiResponseToLocalFormat(apiResponse);
+        
+        if (convertedResults && convertedResults.length > 0) {
+          console.log('✅ Sample API found results:', convertedResults);
+          setResults(convertedResults);
+        } else {
+          console.log('❌ Sample API returned no results');
+          setResults([]); // Set to empty array to trigger category screen
+        }
+      } catch (error) {
+        console.error('❌ Sample API failed:', error);
+        // Still show empty results screen on API failure
+        setResults([]);
+      }
+    })();
   };
 
   const handleSearch = (e) => {
-    e.preventDefault();
-    const key = query.trim().toLowerCase();
-    console.log('Searching for:', key);
-    console.log('Found results:', sampleDB[key] || []);
-    setResults(sampleDB[key] || []);
+    handleSearchWithTerm(query, e);
+  };
+
+  // Handle genre search
+  const handleGenreSearch = (genre) => {
+    const fakeEvent = { preventDefault: () => {} };
+    setQuery(genre); // Set the genre as the search query for display
+    setIsDirectAlbumClick(false); // Ensure header shows for genre search
+    
+    // Use AI API to search for tracks in this genre
+    handleSearchWithTerm(genre, fakeEvent);
+  };
+
+  // Handle direct album click (without header)
+  const handleDirectAlbumSearch = (trackTitle) => {
+    const normalizedSearchTerm = trackTitle.trim().toLowerCase();
+    
+    // Set flags first
+    setIsDirectAlbumClick(true);
+    setSelectedCategory(null);
+    setShowSuggestions(false);
+    setDiscoverPage(0);
+    
+    if (!normalizedSearchTerm) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    
+    setHasSearched(true);
+    
+    // Use AI API for direct album search as well
+    console.log('🤖 Using AI API for direct album search:', trackTitle);
+    
+    (async () => {
+      try {
+        const apiResponse = await fetchSampleIdentification(trackTitle);
+        const convertedResults = convertApiResponseToLocalFormat(apiResponse);
+        
+        if (convertedResults && convertedResults.length > 0) {
+          console.log('✅ Sample API found results for album search:', convertedResults);
+          setResults(convertedResults);
+        } else {
+          console.log('❌ Sample API returned no results for album search');
+          setResults([]);
+        }
+      } catch (error) {
+        console.error('❌ Sample API failed for album search:', error);
+        setResults([]);
+      }
+    })();
   };
 
   // Navigate back to landing (clear results and query)
   const goHome = () => {
     setResults([]);
     setQuery("");
+    setSelectedCategory(null);
+    setHasSearched(false);
+    setIsDirectAlbumClick(false);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -491,52 +595,7 @@ export default function SampleFinderApp() {
     }
   }, [panelOpen, panelData?.artist, panelData?.title]);
 
-  // Discover 섹션 Spotify 데이터 다시 활성화
-  useEffect(() => {
-    const fetchDiscoverData = async () => {
-      console.log('🎵 Fetching Discover Spotify data...');
-      const keys = Object.keys(sampleDB);
-      
-      for (const key of keys) {
-        if (!discoverSpotifyData[key]) {
-          const track = sampleDB[key][0];
-          console.log(`🔍 Fetching: ${track.title} by ${track.artist}`);
-          
-          try {
-            const q = encodeURIComponent(`${track.title} ${track.artist}`.trim());
-            const url = `${apiBase}/api/spotify/search?q=${q}`;
-            
-            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-            
-            if (response.ok) {
-              const data = await response.json();
-              if (data && data.track && data.track.album && data.track.album.images && data.track.album.images.length > 0) {
-                setDiscoverSpotifyData(prev => ({
-                  ...prev,
-                  [key]: data
-                }));
-                console.log(`✅ Got album art for ${track.title}: ${data.track.album.images[0].url}`);
-              } else {
-                console.log(`⚠️ No album images for ${track.title}, using fallback`);
-              }
-            } else {
-              console.log(`❌ API error for ${track.title}: ${response.status}`);
-            }
-          } catch (error) {
-            console.error(`❌ Error fetching ${track.title}:`, error);
-          }
-          
-          // API 호출 간격
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-    };
-
-    // 데이터가 비어있으면 가져오기 시작
-    if (Object.keys(discoverSpotifyData).length === 0) {
-      fetchDiscoverData();
-    }
-  }, []);
+  // Note: Discover section removed since we now use AI API for all data
 
   // Additional useEffect to log whenever panelSpotifyData changes
   useEffect(() => {
@@ -563,91 +622,28 @@ export default function SampleFinderApp() {
                     className="absolute inset-0 transition-all duration-2000 ease-out"
                     style={{
                       background: `
+                        linear-gradient(135deg, 
+                          rgb(40, 35, 45) 0%, 
+                          rgb(50, 40, 55) 20%, 
+                          rgb(45, 35, 50) 40%, 
+                          rgb(40, 35, 45) 60%, 
+                          rgb(50, 40, 55) 80%, 
+                          rgb(45, 35, 50) 100%),
                         radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
-                          rgba(255, 182, 193, 0.04) 0%, 
-                          rgba(255, 182, 193, 0.02) 15%, 
+                          rgba(255, 255, 255, 0.08) 0%, 
+                          rgba(255, 255, 255, 0.04) 15%, 
                           transparent 30%),
                         radial-gradient(circle at ${100 - mousePosition.x}% ${100 - mousePosition.y}%, 
-                          rgba(173, 216, 230, 0.03) 0%, 
+                          rgba(255, 255, 255, 0.06) 0%, 
                           transparent 20%),
                         radial-gradient(circle at ${mousePosition.x * 0.7}% ${mousePosition.y * 0.7}%, 
-                          rgba(255, 218, 185, 0.02) 0%, 
-                          transparent 25%),
-                          linear-gradient(135deg, 
-                          rgb(40, 35, 45) 0%, 
-                          rgb(50, 40, 55) 30%,
-                          rgb(45, 35, 50) 70%,
-                          rgb(40, 35, 45) 100%)
+                          rgba(255, 180, 120, 0.05) 0%, 
+                          transparent 25%)
                       `,
                     }}
                   />
                   
-                  {/* 3D Geometric Grid Background */}
-                  <div className="absolute inset-0 perspective-1000" style={{ perspective: '1000px' }}>
-                    {/* Floating 3D Grid */}
-                    <div 
-                      className="absolute inset-0 opacity-10 transition-transform duration-700 ease-out" 
-                      style={{
-                        background: `
-                          linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 1px, transparent 2px),
-                          linear-gradient(0deg, transparent 0%, rgba(255,255,255,0.03) 1px, transparent 2px)
-                        `,
-                        backgroundSize: '60px 60px',
-                        transform: `
-                          rotateX(${60 + (mousePosition.y - 50) * 0.1}deg) 
-                          rotateY(${(mousePosition.x - 50) * 0.15}deg) 
-                          rotateZ(0deg) 
-                          translateZ(-200px)
-                        `,
-                        transformStyle: 'preserve-3d'
-                      }}
-                    ></div>
-                    
-                    {/* Floating 3D Cubes */}
-                    <div className="absolute inset-0">
-                      {[...Array(12)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="absolute animate-pulse transition-transform duration-1000 ease-out"
-                          style={{
-                            left: `${10 + (i * 7) % 80}%`,
-                            top: `${15 + (i * 11) % 70}%`,
-                            width: '4px',
-                            height: '4px',
-                            background: `rgba(255,255,255,${0.05 + (mousePosition.x + mousePosition.y) * 0.0005})`,
-                            transform: `
-                              perspective(200px) 
-                              rotateX(${45 + i * 15 + (mousePosition.y - 50) * 0.2}deg) 
-                              rotateY(${i * 30 + (mousePosition.x - 50) * 0.3}deg) 
-                              translateZ(${20 + i * 5 + Math.sin((mousePosition.x + mousePosition.y + i * 10) * 0.01) * 10}px)
-                            `,
-                            transformStyle: 'preserve-3d',
-                            boxShadow: `0 0 ${8 + (mousePosition.x + mousePosition.y) * 0.02}px rgba(255,255,255,0.2)`,
-                            animationDelay: `${i * 0.5}s`,
-                            animationDuration: `${3 + i * 0.2}s`
-                          }}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* 3D Depth Layers */}
-                    <div 
-                      className="absolute inset-0 opacity-5 transition-all duration-1000 ease-out" 
-                      style={{
-                        background: `
-                          radial-gradient(circle at ${20 + (mousePosition.x - 50) * 0.3}% ${80 + (mousePosition.y - 50) * 0.2}%, rgba(139, 69, 19, 0.3) 0%, transparent 50%),
-                          radial-gradient(circle at ${80 + (mousePosition.x - 50) * 0.2}% ${20 + (mousePosition.y - 50) * 0.3}%, rgba(75, 0, 130, 0.3) 0%, transparent 50%),
-                          radial-gradient(circle at ${40 + (mousePosition.x - 50) * 0.1}% ${40 + (mousePosition.y - 50) * 0.1}%, rgba(25, 25, 112, 0.2) 0%, transparent 50%)
-                        `,
-                        transform: `
-                          translateZ(-100px) 
-                          rotateX(${(mousePosition.y - 50) * 0.05}deg) 
-                          rotateY(${(mousePosition.x - 50) * 0.05}deg)
-                        `,
-                        transformStyle: 'preserve-3d'
-                      }}
-                    ></div>
-                  </div>
+
                   
                   {/* Soft Organic Pattern Overlay */}
                   <div className="absolute inset-0 opacity-2" style={{
@@ -659,8 +655,24 @@ export default function SampleFinderApp() {
 
 
       {/* Landing Page Container */}
-      {results.length === 0 ? (
+      {!hasSearched ? (
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-8 pb-16 pt-16 md:pt-24 lg:pt-32 xl:pt-48">
+                    
+                      {/* Mouse-tracking radial gradient effect for Landing Page */}
+                      <div 
+                        className="absolute inset-0 transition-all duration-1000 ease-out"
+                        style={{
+                          background: `
+                            radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
+                              rgba(255, 255, 255, 0.03) 0%, 
+                              rgba(255, 255, 255, 0.015) 15%, 
+                              transparent 25%),
+                            radial-gradient(circle at ${100 - mousePosition.x}% ${100 - mousePosition.y}%, 
+                              rgba(255, 255, 255, 0.02) 0%, 
+                              transparent 20%)
+                          `
+                        }}
+                      />
                     
                       <>
                         {/* Large Typography Title */}
@@ -698,7 +710,9 @@ export default function SampleFinderApp() {
           type="text"
                                   placeholder="Search for any song..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleInputChange}
+          onFocus={() => query.length >= 2 && setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                   className="flex-1 px-6 py-4 bg-transparent text-white text-lg font-inter font-light placeholder-white/40 focus:outline-none focus:placeholder-white/60 transition-all duration-300"
                                 />
                                 <button 
@@ -710,20 +724,33 @@ export default function SampleFinderApp() {
                                   </svg>
         </button>
                               </div>
-                            </div>
-      </form>
+                                                        </div>
+                            
+                            {/* Autocomplete Suggestions */}
+                            {showSuggestions && suggestions.length > 0 && (
+                              <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                {suggestions.map((suggestion, index) => (
+                                  <div
+                                    key={index}
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                    className="px-6 py-3 text-white hover:bg-white/10 cursor-pointer transition-colors duration-200 border-b border-white/10 last:border-b-0"
+                                  >
+                                    <span className="text-sm font-light">{suggestion}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </form>
 
                           {/* Example suggestion */}
                           <div className="text-center mt-8">
                             <button 
                               type="button"
                               onClick={() => {
-                                setQuery("why i love you");
+                                setQuery("Why I Love You Kanye");
                                 setTimeout(() => {
-                                  const key = "why i love you";
-                                  console.log('Searching for:', key);
-                                  console.log('Found results:', sampleDB[key] || []);
-                                  setResults(sampleDB[key] || []);
+                                  const fakeEvent = { preventDefault: () => {} };
+                                  handleSearchWithTerm("Why I Love You Kanye", fakeEvent);
                                 }, 100);
                               }}
                               className="text-xs text-white/40 hover:text-white/70 font-inter font-light transition-colors duration-300"
@@ -732,14 +759,23 @@ export default function SampleFinderApp() {
                             </button>
                           </div>
 
-                          {/* Landing Page Discover Section */}
+                          {/* AI-Powered Search Suggestions */}
                           <div className="mt-24 w-full max-w-6xl">
+                            <div className="text-center mb-8">
+                              <h3 className="text-white/60 text-sm font-medium mb-4">
+                                Try searching for these popular samples
+                              </h3>
+                            </div>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 justify-items-center">
-                              {Object.keys(sampleDB).slice(0, 6).map((key, idx) => {
-                                const track = sampleDB[key][0]; // 첫 번째 트랙 가져오기
-                                const currentSpotifyData = discoverSpotifyData[key];
-                                const albumImageUrl = currentSpotifyData?.track?.album?.images?.[0]?.url || track.thumbnail;
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+                              {[
+                                { query: 'Flashing Lights Kanye', title: 'Flashing Lights', artist: 'Kanye West' },
+                                { query: 'Stan Eminem', title: 'Stan', artist: 'Eminem' },
+                                { query: 'California Love 2Pac', title: 'California Love', artist: '2Pac' },
+                                { query: 'Through the Wire', title: 'Through the Wire', artist: 'Kanye West' },
+                                { query: 'Power Kanye', title: 'Power', artist: 'Kanye West' },
+                                { query: 'Halo Beyonce', title: 'Halo', artist: 'Beyoncé' }
+                              ].map((suggestion, idx) => {
                                 
                                 return (
                                   <div 
@@ -753,9 +789,11 @@ export default function SampleFinderApp() {
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setQuery(track.title);
-                                      const fakeEvent = { preventDefault: () => {} };
-                                      handleSearch(fakeEvent);
+                                      setQuery(suggestion.query);
+                                      setTimeout(() => {
+                                        const fakeEvent = { preventDefault: () => {} };
+                                        handleSearchWithTerm(suggestion.query, fakeEvent);
+                                      }, 100);
                                     }}
                                   >
                                     <div 
@@ -771,23 +809,21 @@ export default function SampleFinderApp() {
                                         e.currentTarget.style.transform = 'perspective(800px) rotateX(2deg) rotateY(-4deg)';
                                       }}
                                     >
-                                      <img 
-                                        src={albumImageUrl} 
-                                        alt={track.title}
-                                        className="w-full h-full object-cover"
-                                        onLoad={() => console.log(`🖼️ Landing image loaded for ${track.title}:`, albumImageUrl)}
-                                        onError={() => console.log(`❌ Landing image failed for ${track.title}:`, albumImageUrl)}
-                                      />
-                                      {/* 3D depth effect */}
-                                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/30 pointer-events-none"></div>
-                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
+                                      <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                                        <div className="text-white/60 text-center">
+                                          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                          </svg>
+                                          <div className="text-xs">AI Search</div>
+                                        </div>
+                                      </div>
                                     </div>
                                     <div className="text-center">
                                       <h4 className="text-white text-xs font-medium mb-1 line-clamp-2 leading-tight">
-                                        {currentSpotifyData?.track?.name || track.title}
+                                        {suggestion.title}
                                       </h4>
                                       <p className="text-white/60 text-xs line-clamp-1">
-                                        {currentSpotifyData?.track?.artists?.[0]?.name || track.artist}
+                                        {suggestion.artist}
                                       </p>
                                     </div>
                                   </div>
@@ -800,7 +836,7 @@ export default function SampleFinderApp() {
                       </>
         </div>
       ) : (
-        <div className="relative z-10 min-h-screen pt-6">
+        <div className="relative z-10 min-h-screen pt-6 flex flex-col">
           {/* Subtle Gradient Background for Results Page */}
           <div className="fixed inset-0 -z-10">
             {/* Landing page colors with gradient effect */}
@@ -826,11 +862,11 @@ export default function SampleFinderApp() {
                 background: `
                   radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, 
                     rgba(255, 255, 255, 0.03) 0%, 
-                    rgba(255, 255, 255, 0.015) 20%, 
-                    transparent 40%),
+                    rgba(255, 255, 255, 0.015) 15%, 
+                    transparent 25%),
                   radial-gradient(circle at ${100 - mousePosition.x}% ${100 - mousePosition.y}%, 
                     rgba(255, 255, 255, 0.02) 0%, 
-                    transparent 30%)
+                    transparent 20%)
                 `
               }}
             />
@@ -884,8 +920,8 @@ export default function SampleFinderApp() {
                                 <input
                                   type="text"
                                   placeholder="Search songs..."
-                                  value={query}
-                                  onChange={(e) => setQuery(e.target.value)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
                                   className="flex-1 px-4 py-2.5 bg-transparent text-white text-sm font-inter font-light placeholder-white/40 focus:outline-none focus:placeholder-white/60 transition-all duration-300"
                                 />
                                 <button 
@@ -895,7 +931,7 @@ export default function SampleFinderApp() {
                                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                   </svg>
-                                </button>
+        </button>
                               </div>
                             </div>
                             {/* Genre quick filters right under search input */}
@@ -907,11 +943,7 @@ export default function SampleFinderApp() {
                                       <button
                                         key={`gh-${idx}`}
                                         type="button"
-                                        onClick={() => {
-                                          setQuery(g);
-                                          const fakeEvent = { preventDefault: () => {} };
-                                          handleSearch(fakeEvent);
-                                        }}
+                                        onClick={() => handleGenreSearch(g)}
                                         className="px-3 py-1 text-[10px] rounded-full bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white/85 transition-all duration-300 whitespace-nowrap"
                                       >
                                         {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -937,39 +969,199 @@ export default function SampleFinderApp() {
                                 </div>
                               </div>
                             )}
-                          </form>
+      </form>
                         </div>
 
                       </div>
 
+
+
+
+
                     {/* Results container */}
-                    <div className="w-full max-w-7xl mx-auto px-6">
+                    <div className="w-full max-w-7xl mx-auto px-6 flex-1">
+                      
+                      {/* Sample API Loading State */}
+                      {sampleApiLoading && (
+                        <div className="pt-16 text-center">
+                          <div className="mb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/5 rounded-full animate-pulse">
+                              <svg className="w-8 h-8 text-white/40 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            </div>
+                          </div>
+                          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-2">
+                            Searching with AI...
+                          </h2>
+                          <p className="text-white/60 text-sm">
+                            Identifying samples for "{lastApiQuery}"
+                          </p>
+                          {sampleApiError && (
+                            <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-md mx-auto">
+                              <p className="text-red-300 text-sm">
+                                {sampleApiError}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Category Selection View (Search results for XX) - Only when no results */}
+                      {hasSearched && !selectedCategory && results.length === 0 && !sampleApiLoading && (
+                        <div className="pt-8">
+                          {/* Search Query Display */}
+                          <div className="text-center mb-8">
+                            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                              Search results for
+                            </h1>
+                            <h2 className="text-5xl md:text-6xl font-bold text-white">
+                              "{query}"
+                            </h2>
+                          </div>
+                          
+                          {/* No Results Info */}
+                          <div className="text-center mb-8">
+                            <p className="text-lg text-white/70 mb-2">
+                              No tracks or artists found
+                            </p>
+                            <p className="text-sm text-white/50">
+                              Try one of the suggestions below
+                            </p>
+                          </div>
+                          
+                          {/* Horizontal line */}
+                          <div className="h-px bg-white/10 w-full mb-8"></div>
+                          
+                          {/* Artists Preview */}
+                          <div className="mb-12">
+                            <h3 className="text-xl font-bold text-white mb-6">
+                              Other artists
+                            </h3>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60 leading-relaxed">
+                              {[
+                                'Kanye West', 'Eminem', 'Beyoncé', '2Pac', 'Jay-Z', 'Drake',
+                                'Kendrick Lamar', 'Nas', 'The Notorious B.I.G.', 'OutKast',
+                                'Wu-Tang Clan', 'A Tribe Called Quest', 'De La Soul', 'Public Enemy'
+                              ].map((artist, i) => (
+                                <span 
+                                  key={i} 
+                                  className="hover:text-white/80 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    const fakeEvent = { preventDefault: () => {} };
+                                    handleSearchWithTerm(artist, fakeEvent);
+                                  }}
+                                >
+                                  {artist}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Discover Section */}
+                          <div className="mb-8">
+                            <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-xl font-bold text-white">
+                                Discover more sampled tracks
+                              </h3>
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span className="text-white/30 text-xs">scroll</span>
+                              </div>
+                            </div>
+                            <div className="text-center py-8">
+                              <p className="text-white/60 text-sm">
+                                All sample discovery is now powered by AI. Search for any song above!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Detailed Track View - Show directly when results exist */}
+                      {results.length > 0 && (
+                        <div>
+                          
+                          {/* Search Results Header - Show when any results exist (except direct album clicks) */}
+                          {results.length > 0 && !isDirectAlbumClick && (
+                            <div className="mb-8 pb-4 text-center">
+                              <h2 className="text-white/60 text-sm font-normal tracking-wide">
+                                Found {results.length} tracks {results.some(r => r.isApiResult) ? 'for' : 'by'} {query}
+                              </h2>
+                              <p className="text-white/35 text-xs mt-1 font-light">
+                                {results.some(r => r.isApiResult) 
+                                  ? 'Results identified using AI-powered sample detection'
+                                  : 'Showing most popular tracks first'
+                                }
+                              </p>
+                              <div className="mt-4 h-px bg-white/5"></div>
+                            </div>
+                          )}
+
         {results.map((item, i) => (
                         <div
                           key={i}
-                          className={`${i > 0 ? 'pt-16 mt-16 border-t-2 border-white' : 'pt-8 mt-8'} space-y-16 lg:space-y-20`}
+                          className={`${i > 0 ? 'pt-12 mt-12' : 'pt-8 mt-8'}`}
                         >
-                                                    {/* Album Info */}
-                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-20">
+                          {/* Simple Track Header */}
+                          <div className="mb-12">
+              <div className="flex items-center gap-3 mb-2">
+                              <h1 className={`text-2xl md:text-3xl font-bold text-white ${((spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title).toLowerCase().includes('why i love you') ? 'font-libreCaslon' : 'font-notoSerif'}`}>
+                                {(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}
+                              </h1>
+                              {item.isApiResult && (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border border-blue-500/30 rounded-full">
+                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  </svg>
+                                  AI Identified
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-lg text-white/70">
+                              by {(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}
+                            </p>
+                            {item.sampledFrom && (
+                              <p className="text-sm text-white/50 mt-2">
+                                Samples "{item.sampledFrom.title}" by {item.sampledFrom.artist}
+                                {item.sampledFrom.note && (
+                                  <span className="block text-xs text-white/40 mt-1">
+                                    {item.sampledFrom.note}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            {item.apiNote && !item.sampledFrom && (
+                              <p className="text-sm text-white/40 mt-2 italic">
+                                {item.apiNote}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Album Info */}
+                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2">
                             {/* Vertical Divider - only visible on large screens */}
                             <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             
                             {/* Left Side - Sampled Song */}
                             <div className="space-y-6">
                               {/* Section Header */}
-                              <div>
+            <div>
                                 <div className="mb-4">
                                   <h2 className="text-lg font-bold text-white relative">
                                     New Track
                                     <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 rounded-full opacity-80"></div>
                                   </h2>
-                                </div>
-                              </div>
+              </div>
+            </div>
                               
                               {/* Album Art and Song Info - Side by side */}
                               <div className="flex items-start gap-4">
                                 {/* Album Art */}
-                                <div className="relative w-48 flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
+                                <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'sampled',
                                   title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
                                   artist: (spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist,
@@ -985,7 +1177,7 @@ export default function SampleFinderApp() {
                                     alt={`${item.title} album art`}
                                     className="relative w-full aspect-square object-cover shadow-xl" 
                                   />
-                                </div>
+          </div>
                                 
                                 {/* Song Info */}
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
@@ -996,9 +1188,23 @@ export default function SampleFinderApp() {
                                   image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                 })}>
-                                  <h3 className="text-xl font-bold text-white">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
+                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
                                   <p className="text-base text-gray-300">{(spotifyInfo[`${item.title}|${item.artist}`]?.artists?.join(', ')) || item.artist}</p>
                                   <p className="text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
+                                  
+                                  {/* Genre Tags */}
+                                  {spotifyInfo[`${item.title}|${item.artist}`]?.genres && spotifyInfo[`${item.title}|${item.artist}`].genres.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                      {spotifyInfo[`${item.title}|${item.artist}`].genres.slice(0, 3).map((genre, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="px-3 py-1 text-[10px] rounded-full bg-white/5 border border-white/10 text-white/60 whitespace-nowrap"
+                                        >
+                                          {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                                        </span>
+        ))}
+      </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1012,13 +1218,13 @@ export default function SampleFinderApp() {
                                     Sample Source
                                     <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-cyan-400 via-blue-400 to-blue-600 rounded-full opacity-80"></div>
                                   </h2>
-                                </div>
-                              </div>
+              </div>
+            </div>
                               
                               {/* Album Art and Song Info - Side by side */}
                               <div className="flex items-start gap-4">
                                 {/* Album Art */}
-                                <div className="relative w-48 flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
+                                <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
                                   title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
                                   artist: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist,
@@ -1034,7 +1240,7 @@ export default function SampleFinderApp() {
                                     alt={`${item.sampledFrom.title} album art`}
                                     className="relative w-full aspect-square object-cover shadow-xl" 
                                   />
-                                </div>
+          </div>
                                 
                                 {/* Song Info */}
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
@@ -1045,22 +1251,36 @@ export default function SampleFinderApp() {
                                   image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                 })}>
-                                  <h3 className="text-xl font-bold text-white">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
+                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
                                   <p className="text-base text-gray-300">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists?.join(', ')) || item.sampledFrom.artist}</p>
                                   <p className="text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
+                                  
+                                  {/* Genre Tags */}
+                                  {spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.genres && spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`].genres.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                      {spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`].genres.slice(0, 3).map((genre, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="px-3 py-1 text-[10px] rounded-full bg-white/5 border border-white/10 text-white/60 whitespace-nowrap"
+                                        >
+                                          {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                                        </span>
+        ))}
+      </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           </div>
 
                           {/* Video Player Cards */}
-                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative">
+                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative pt-12">
                             {/* Vertical Divider - only visible on large screens */}
                             <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group">
-                                            <div className="absolute -top-12 left-0">
+                                            <div className="absolute -top-8 left-0">
                 <span className="text-sm font-bold text-white">
                   Play & Compare
                 </span>
@@ -1132,67 +1352,60 @@ export default function SampleFinderApp() {
               </div>
             </div>
           </div>
-        ))}
+          ))}
+                        </div>
+                      )}
 
                       {/* Discover More - clearly separated section (wider than main) */}
                       {results.length > 0 && (
                         <div className="mt-32 lg:mt-48 relative w-screen left-1/2 -translate-x-1/2">
                           <div className="max-w-[90rem] mx-auto px-6">
                             <div className="h-px bg-white/5 mb-8"></div>
-                            <h4 className="text-white/85 text-lg font-semibold mb-6">Discover more sampled tracks</h4>
-                            <div 
-                              className="flex gap-6 overflow-x-auto pb-4 cursor-grab active:cursor-grabbing" 
-                              style={{scrollBehavior: 'smooth'}}
-                              onMouseDown={(e) => {
-                                const container = e.currentTarget;
-                                let isDown = true;
-                                let startX = e.pageX - container.offsetLeft;
-                                let scrollLeft = container.scrollLeft;
-                                
-                                container.style.cursor = 'grabbing';
-                                container.style.userSelect = 'none';
-                                
-                                const handleMouseMove = (e) => {
-                                  if (!isDown) return;
-                                  e.preventDefault();
-                                  const x = e.pageX - container.offsetLeft;
-                                  const walk = (x - startX) * 2; // 스크롤 속도
-                                  container.scrollLeft = scrollLeft - walk;
-                                };
-                                
-                                const handleMouseUp = () => {
-                                  isDown = false;
-                                  container.style.cursor = 'grab';
-                                  container.style.userSelect = '';
-                                  document.removeEventListener('mousemove', handleMouseMove);
-                                  document.removeEventListener('mouseup', handleMouseUp);
-                                  document.removeEventListener('mouseleave', handleMouseUp);
-                                };
-                                
-                                document.addEventListener('mousemove', handleMouseMove);
-                                document.addEventListener('mouseup', handleMouseUp);
-                                document.addEventListener('mouseleave', handleMouseUp);
-                              }}>
-                            {Object.keys(sampleDB).map((key, idx) => {
-                              const track = sampleDB[key][0]; // 첫 번째 트랙 가져오기
-                              const currentSpotifyData = discoverSpotifyData[key];
-                              const albumImageUrl = currentSpotifyData?.track?.album?.images?.[0]?.url || track.thumbnail;
+                            <div className="flex items-center justify-between mb-6">
+                              <h4 className="text-white/85 text-lg font-semibold">Discover more sampled tracks</h4>
+                              <div className="flex items-center gap-3">
+                                <button 
+                                  onClick={() => setDiscoverPage(Math.max(0, discoverPage - 1))}
+                                  disabled={discoverPage === 0}
+                                  className={`p-2 rounded-full transition-all duration-200 ${
+                                    discoverPage === 0 
+                                      ? 'text-white/20 cursor-not-allowed' 
+                                      : 'text-white/40 hover:text-white/70 hover:bg-white/5 cursor-pointer'
+                                  }`}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                                  </svg>
+                                </button>
+                                <button 
+                                  disabled={true}
+                                  className="p-2 rounded-full transition-all duration-200 text-white/20 cursor-not-allowed"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                                <span className="text-white/30 text-xs ml-1">
+                                  AI Powered Discovery
+                                </span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                            {[].map((item, idx) => {
+                              // This section has been replaced with AI-powered search
                               
                               // 디버깅 로그 제거 (무한 루프 방지)
                               
                               return (
                               <div 
                                 key={idx} 
-                                className="cursor-pointer flex-shrink-0 w-52 select-none group transition-transform duration-200 hover:scale-[1.02]"
+                                className="cursor-pointer select-none group transition-transform duration-200 hover:scale-[1.02]"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setQuery(track.title);
-                                  const fakeEvent = { preventDefault: () => {} };
-                                  handleSearch(fakeEvent);
+                                  handleDirectAlbumSearch(track.title);
                                 }}
-                                onMouseDown={(e) => e.stopPropagation()}
                               >
-                                <div className="aspect-square bg-white/5 overflow-hidden mb-4 relative transition-all duration-200 group-hover:shadow-lg group-hover:shadow-white/5">
+                                <div className="w-[92%] aspect-square bg-white/5 overflow-hidden mb-4 relative mx-auto transition-all duration-200 group-hover:shadow-lg group-hover:shadow-white/5">
                                   <img 
                                     src={albumImageUrl} 
                                     alt={track.title}
@@ -1218,23 +1431,11 @@ export default function SampleFinderApp() {
                     </div>
 
                     {/* Slide-in Detail Panel */}
-                    <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[400px] md:w-[480px] lg:w-[520px] bg-[#18122a]/97 border-l border-white/10 backdrop-blur-md transform transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                            {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-8 pb-4 border-b border-white/15">
-        <div>
-          <p className="text-sm text-white/80 uppercase tracking-wide mb-3">About Artist</p>
-          <h3 className="text-4xl font-semibold text-white">
-            {panelSpotifyData?.artists?.[0] || panelData?.artist?.split(',')[0]?.trim() || 'Artist'}
-          </h3>
-        </div>
-        <button onClick={closePanel} className="p-2 rounded-md hover:bg-gradient-to-b from-transparent via-white/5 to-transparent text-white/80 hover:text-white transition-colors" aria-label="Close">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
+                    <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[320px] md:w-[360px] lg:w-[400px] xl:w-[440px] 2xl:w-[480px] backdrop-blur-md transform transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{background: 'linear-gradient(135deg, rgba(22, 15, 20, 0.97) 0%, rgba(28, 20, 25, 0.95) 20%, rgba(32, 22, 28, 0.93) 35%, rgba(26, 18, 23, 0.95) 50%, rgba(20, 14, 18, 0.96) 65%, rgba(16, 11, 15, 0.97) 80%, rgba(10, 8, 12, 0.98) 100%)', borderLeft: '2px solid rgba(255, 255, 255, 0.06)'}}>
                       {/* Body */}
-                      <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-                        {/* Artist image */}
-                        <div className="w-full rounded-md overflow-hidden bg-white/5">
+                      <div className="overflow-y-auto h-full">
+                        {/* Artist image - Full width header style with overlay header */}
+                        <div className="w-full rounded-none overflow-hidden bg-white/5 relative">
                           {(() => {
                             // Handle different API response structures
                             const bestImg = panelSpotifyData?.artist?.bestImage;
@@ -1266,13 +1467,30 @@ export default function SampleFinderApp() {
                             console.log('🔥 FORCE DEBUG - coverUrl exists?', !!coverUrl, 'value:', coverUrl);
                             
                             return (
-                              <div className="w-full aspect-[4/3]">
-                                <img src={src} alt="Artist or album" className="w-full h-full object-cover" />
+                              <div className="w-full aspect-[5/4]">
+                                <img src={src} alt="Artist or album" className="w-full h-full object-cover object-top" />
+                                
+                                {/* Header overlay */}
+                                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/40 via-black/20 to-transparent p-5 pt-8">
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <p className="text-sm text-white/90 uppercase tracking-wide mb-2">About Artist</p>
+                                      <h3 className="text-3xl font-semibold text-white drop-shadow-lg">
+                                        {panelSpotifyData?.artists?.[0] || panelData?.artist?.split(',')[0]?.trim() || 'Artist'}
+                                      </h3>
+                                    </div>
+                                    <button onClick={closePanel} className="p-2 rounded-md hover:bg-white/10 text-white/90 hover:text-white transition-colors backdrop-blur-sm" aria-label="Close">
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             );
                           })()}
                         </div>
                         
+                        {/* Content section with padding */}
+                        <div className="p-5 space-y-4">
                         {/* Album art + Song info side by side */}
                         <div className="flex gap-4 items-center">
                           {/* Small album art (left) - slight rounded corners */}
@@ -1302,16 +1520,7 @@ export default function SampleFinderApp() {
                           </div>
                         </div>
 
-                        {/* Genre tags */}
-                        {panelSpotifyData?.genres && panelSpotifyData.genres.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {panelSpotifyData.genres.map((genre, index) => (
-                              <span key={index} className="px-3 py-1.5 text-xs font-medium bg-white/8 text-white/75 rounded-full tracking-wide border border-white/10">
-                                {genre.charAt(0).toUpperCase() + genre.slice(1)}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+
 
                         {/* Artist information and bio */}
                         <div className="space-y-4">
@@ -1321,7 +1530,13 @@ export default function SampleFinderApp() {
                               {panelSpotifyData.genres && panelSpotifyData.genres.length > 0 && (
                                 <div>
                                   <span className="text-white/60 text-sm">Genres</span>
-                                  <div className="text-white font-medium">{panelSpotifyData.genres.join(', ')}</div>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {panelSpotifyData.genres.map((genre, index) => (
+                                      <span key={index} className="px-3 py-1.5 text-xs font-medium bg-white/8 text-white/75 rounded-full tracking-wide border border-white/10">
+                                        {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                               {panelSpotifyData.artists && panelSpotifyData.artists.length > 0 && (
@@ -1335,10 +1550,10 @@ export default function SampleFinderApp() {
                           
                           {/* Spotify stats (if available) */}
                           {panelSpotifyData?.artist && panelSpotifyData.artist.popularity > 0 && (
-                            <div className="text-sm">
-                              <div>
-                                <span className="text-white/60 font-medium tracking-wide text-xs uppercase">Popularity</span>
-                                <div className="text-white font-semibold text-base tracking-tight">{panelSpotifyData.artist.popularity}/100</div>
+                            <div>
+                              <span className="text-white/60 text-sm">Popularity</span>
+                              <div className="text-white font-medium mt-1">
+                                {Math.round(panelSpotifyData.artist.popularity / 10)}/10
                               </div>
                             </div>
                           )}
@@ -1360,6 +1575,7 @@ export default function SampleFinderApp() {
                         {!panelSpotifyData && panelOpen && (
                           <div className="text-xs text-white/60">Loading artist data…</div>
                         )}
+                        </div>
                       </div>
                     </div>
                     {/* Backdrop */}
@@ -1367,77 +1583,77 @@ export default function SampleFinderApp() {
                       <button className="fixed inset-0 z-40 bg-[#161228]/52" onClick={closePanel} aria-label="Close panel backdrop"></button>
                     )}
                     
-                    {/* Footer */}
-                    <footer className="relative mt-32 py-16 px-6 z-20">
-                      {/* Very dark subtle background */}
-                      <div className="absolute inset-0 bg-gray-950/60"></div>
-                      
-                      <div className="relative w-full px-6">
+                    {/* Footer for Results Page */}
+                    <footer className="relative mt-64 py-16 px-6">
+                        {/* Very dark subtle background */}
+                        <div className="absolute inset-0 bg-gray-950/60"></div>
                         
-                        {/* Top row with logo and main info */}
-                        <div className="flex items-start justify-between mb-6">
+                        <div className="relative w-full px-6">
                           
-                          {/* Left: Logo */}
-                          <div className="flex-shrink-0">
-                            <h1 className="text-white/60 font-bitcount text-2xl tracking-wide leading-tight">
-                              sample finder
-                            </h1>
-                            <p className="text-white/35 mt-2" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '300', letterSpacing: '0.5px'}}>
-                              Discover who sampled the beat
-                            </p>
+                          {/* Top row with logo and main info */}
+                          <div className="flex items-start justify-between mb-6">
+                            
+                            {/* Left: Logo */}
+                            <div className="flex-shrink-0">
+                              <h1 className="text-white/60 font-bitcount text-2xl tracking-wide leading-tight">
+                                sample finder
+                              </h1>
+                              <p className="text-white/35 mt-2" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '300', letterSpacing: '0.5px'}}>
+                                Discover who sampled the beat
+                              </p>
+                            </div>
+                            
+                            {/* Right: Main info */}
+                            <div className="text-right space-y-3">
+                              <div className="text-white/70 tracking-wide" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '13px', fontWeight: '400'}}>
+                                © 2025 Ellie Kim
+                              </div>
+                              <div className="text-white/50 tracking-wider" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '400'}}>
+                                Data from Spotify and YouTube
+                              </div>
+                            </div>
+                            
                           </div>
                           
-                          {/* Right: Main info */}
-                          <div className="text-right space-y-3">
-                            <div className="text-white/70 tracking-wide" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '13px', fontWeight: '400'}}>
-                              © 2025 Ellie Kim
+                          {/* Bottom row with version and built with */}
+                          <div className="flex items-center justify-between">
+                            
+                            {/* Left: Empty space or could add something later */}
+                            <div></div>
+                            
+                            {/* Right: Version and links */}
+                            <div className="text-right space-y-2">
+                              <div className="flex items-center justify-end gap-6">
+                                <span 
+                                  className="text-white/60 bg-white/5 px-3 py-1 rounded-full border border-white/10" 
+                                  style={{fontFamily: 'SF Mono, ui-monospace, monospace', fontSize: '10px', fontWeight: '500', letterSpacing: '0.5px'}}
+                                >
+                                  v0.6
+                                </span>
+                                <a 
+                                  href="https://github.com/elliekimdesign/sample-finder" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-white/45 hover:text-white/70 transition-all duration-300"
+                                  style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '400', textDecoration: 'none'}}
+                                >
+                                  Patch Notes
+                                </a>
+                              </div>
+                              <div className="text-white/30" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '10px', fontWeight: '300', letterSpacing: '1px'}}>
+                                BUILT WITH VIBE CODING
+                              </div>
                             </div>
-                            <div className="text-white/50 tracking-wider" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '400'}}>
-                              Data from Spotify and YouTube
-                            </div>
+                            
                           </div>
                           
                         </div>
-                        
-                        {/* Bottom row with version and built with */}
-                        <div className="flex items-center justify-between">
-                          
-                          {/* Left: Empty space or could add something later */}
-                          <div></div>
-                          
-                          {/* Right: Version and links */}
-                          <div className="text-right space-y-2">
-                            <div className="flex items-center justify-end gap-6">
-                              <span 
-                                className="text-white/60 bg-white/5 px-3 py-1 rounded-full border border-white/10" 
-                                style={{fontFamily: 'SF Mono, ui-monospace, monospace', fontSize: '10px', fontWeight: '500', letterSpacing: '0.5px'}}
-                              >
-                                v0.6
-                              </span>
-                              <a 
-                                href="https://github.com/elliekimdesign/sample-finder" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-white/45 hover:text-white/70 transition-all duration-300"
-                                style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '400', textDecoration: 'none'}}
-                              >
-                                Patch Notes
-                              </a>
-                            </div>
-                            <div className="text-white/30" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '10px', fontWeight: '300', letterSpacing: '1px'}}>
-                              BUILT WITH VIBE CODING
-                            </div>
-                          </div>
-                          
-                        </div>
-                        
-                      </div>
-                    </footer>
+                      </footer>
         </div>
       )}
-      
+
       {/* Footer for Landing Page */}
-      {results.length === 0 && (
+      {!hasSearched && (
         <footer className="relative mt-32 py-16 px-6">
           {/* Very dark subtle background */}
           <div className="absolute inset-0 bg-gray-950/60"></div>

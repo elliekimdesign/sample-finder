@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Noto Serif fallback registration for global usage */
+:root {
+  --font-noto-serif: 'Noto Serif', serif;
+}
+
 /* 스크롤바 숨기기 */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
