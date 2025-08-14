@@ -1127,7 +1127,7 @@ export default function SampleFinderApp() {
                               )}
                             </div>
                             <p className="text-lg text-white/70">
-                              by {safeJoinArtistssafeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}
+                              by {safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}
                             </p>
                             {item.sampledFrom && (
                               <p className="text-sm text-white/50 mt-2">
