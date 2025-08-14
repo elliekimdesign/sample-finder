@@ -428,7 +428,7 @@ export default function SampleFinderApp() {
         const apiResponse = await fetchSampleIdentification(searchTerm);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
-        if (convertedResults && convertedResults.length > 0) {
+        if (convertedResults && Array.isArray(convertedResults) && convertedResults.length > 0) {
           console.log('✅ Sample API found results:', convertedResults);
           setResults(convertedResults);
         } else {
@@ -483,7 +483,7 @@ export default function SampleFinderApp() {
         const apiResponse = await fetchSampleIdentification(trackTitle);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
-        if (convertedResults && convertedResults.length > 0) {
+        if (convertedResults && Array.isArray(convertedResults) && convertedResults.length > 0) {
           console.log('✅ Sample API found results for album search:', convertedResults);
           setResults(convertedResults);
         } else {
@@ -1106,7 +1106,7 @@ export default function SampleFinderApp() {
                             </div>
                           )}
 
-        {results.map((item, i) => (
+        {results.filter(item => item && item.title && item.artist).map((item, i) => (
                         <div
                           key={i}
                           className={`${i > 0 ? 'pt-12 mt-12' : 'pt-8 mt-8'}`}
@@ -1129,7 +1129,7 @@ export default function SampleFinderApp() {
                             <p className="text-lg text-white/70">
                               by {safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}
                             </p>
-                            {item.sampledFrom && (
+                            {item.sampledFrom && item.sampledFrom.title && item.sampledFrom.artist && (
                               <p className="text-sm text-white/50 mt-2">
                                 Samples "{item.sampledFrom.title}" by {item.sampledFrom.artist}
                                 {item.sampledFrom.note && (
