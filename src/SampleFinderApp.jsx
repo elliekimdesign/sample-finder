@@ -71,6 +71,20 @@ export default function SampleFinderApp() {
 
       const data = await response.json();
       console.log('🎵 Sample API Response:', data);
+      console.log('🔍 YouTube URLs in response:', {
+        querySong: {
+          title: data.query_song?.title,
+          artist: data.query_song?.artist,
+          youtube_url: data.query_song?.youtube_url,
+          youtube_title: data.query_song?.youtube_title
+        },
+        sample: {
+          title: data.main_sample?.title,
+          artist: data.main_sample?.artist,
+          youtube_url: data.main_sample?.youtube_url,
+          youtube_title: data.main_sample?.youtube_title
+        }
+      });
       
       return data;
     } catch (error) {
@@ -100,7 +114,7 @@ export default function SampleFinderApp() {
       title: query_song.title,
       artist: query_song.artist || 'Unknown Artist',
       year: new Date().getFullYear(), // Default to current year
-      youtube: '', // Will be populated by Spotify search if needed
+      youtube: query_song.youtube_url || '', // Use YouTube URL from API if available
       thumbnail: '', // Will be populated by Spotify search
       isApiResult: true, // Flag to indicate this came from API
       apiConfidence: main_sample?.confidence || 0
@@ -112,7 +126,7 @@ export default function SampleFinderApp() {
         title: main_sample.title,
         artist: main_sample.artist || 'Unknown Artist',
         year: null, // API doesn't provide year for samples
-        youtube: '',
+        youtube: main_sample.youtube_url || '', // Use YouTube URL from API if available
         thumbnail: '',
         note: main_sample.note
       };
@@ -120,6 +134,22 @@ export default function SampleFinderApp() {
       // Store the note even if no sample was identified
       track.apiNote = main_sample.note;
     }
+
+    // Debug logging for YouTube URLs
+    console.log('🎵 Converting API response to track format:', {
+      querySong: {
+        title: track.title,
+        artist: track.artist,
+        youtube: track.youtube,
+        youtubeUrl: query_song.youtube_url
+      },
+      sample: track.sampledFrom ? {
+        title: track.sampledFrom.title,
+        artist: track.sampledFrom.artist,
+        youtube: track.sampledFrom.youtube,
+        youtubeUrl: main_sample.youtube_url
+      } : null
+    });
 
     return [track]; // Return as array to match local DB format
   }
@@ -1293,32 +1323,43 @@ export default function SampleFinderApp() {
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
-                                  <iframe
-                                  width="100%"
-                                  height="100%"
-                                  src={(() => {
-                                    const extractVideoId = (url) => {
-                                      if (url.includes('youtu.be/')) {
-                                        const parts = url.split('youtu.be/')[1];
-                                        const videoId = parts ? parts.split('?')[0] : null;
-                                        const timeMatch = url.match(/[?&]t=(\d+)/);
-                                        const startTime = timeMatch ? timeMatch[1] : null;
-                                        return { videoId, startTime };
-                                      } else {
-                                        const urlParts = url.split('v=')[1];
-                                        const videoId = urlParts ? urlParts.split('&')[0] : null;
-                                        return { videoId, startTime: null };
-                                      }
-                                    };
-                                    const { videoId, startTime } = extractVideoId(item.youtube);
-                                    return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
-                                  })()}
-                                  title="YouTube video player"
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
-                                  ></iframe>
+                                  {item.youtube ? (
+                                    <iframe
+                                      width="100%"
+                                      height="100%"
+                                      src={(() => {
+                                        const extractVideoId = (url) => {
+                                          if (url.includes('youtu.be/')) {
+                                            const parts = url.split('youtu.be/')[1];
+                                            const videoId = parts ? parts.split('?')[0] : null;
+                                            const timeMatch = url.match(/[?&]t=(\d+)/);
+                                            const startTime = timeMatch ? timeMatch[1] : null;
+                                            return { videoId, startTime };
+                                          } else {
+                                            const urlParts = url.split('v=')[1];
+                                            const videoId = urlParts ? urlParts.split('&')[0] : null;
+                                            return { videoId, startTime: null };
+                                          }
+                                        };
+                                        const { videoId, startTime } = extractVideoId(item.youtube);
+                                        return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
+                                      })()}
+                                      title="YouTube video player"
+                                      frameBorder="0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                      <div className="text-center text-white/40">
+                                        <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <p className="text-sm">No video available</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1328,40 +1369,51 @@ export default function SampleFinderApp() {
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
-                                  <iframe
-                                  width="100%"
-                                  height="100%"
-                                  src={(() => {
-                                    const extractVideoId = (url) => {
-                                      if (url.includes('youtu.be/')) {
-                                        const parts = url.split('youtu.be/')[1];
-                                        const videoId = parts ? parts.split('?')[0] : null;
-                                        const timeMatch = url.match(/[?&]t=(\d+)/);
-                                        const startTime = timeMatch ? timeMatch[1] : null;
-                                        return { videoId, startTime };
-                                      } else {
-                                        const urlParts = url.split('v=')[1];
-                                        const videoId = urlParts ? urlParts.split('&')[0] : null;
-                                        return { videoId, startTime: null };
-                                      }
-                                    };
-                                    const { videoId, startTime } = extractVideoId(item.sampledFrom.youtube);
-                                    return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
-                                  })()}
-                                  title="YouTube video player"
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
-                                  ></iframe>
-              </div>
-            </div>
-              </div>
-            </div>
-          </div>
-          ))}
+                                  {item.sampledFrom?.youtube ? (
+                                    <iframe
+                                      width="100%"
+                                      height="100%"
+                                      src={(() => {
+                                        const extractVideoId = (url) => {
+                                          if (url.includes('youtu.be/')) {
+                                            const parts = url.split('youtu.be/')[1];
+                                            const videoId = parts ? parts.split('?')[0] : null;
+                                            const timeMatch = url.match(/[?&]t=(\d+)/);
+                                            const startTime = timeMatch ? timeMatch[1] : null;
+                                            return { videoId, startTime };
+                                          } else {
+                                            const urlParts = url.split('v=')[1];
+                                            const videoId = urlParts ? urlParts.split('&')[0] : null;
+                                            return { videoId, startTime: null };
+                                          }
+                                        };
+                                        const { videoId, startTime } = extractVideoId(item.sampledFrom.youtube);
+                                        return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
+                                      })()}
+                                      title="YouTube video player"
+                                      frameBorder="0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                      <div className="text-center text-white/40">
+                                        <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <p className="text-sm">No video available</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      )}
+                      ))}
+                    </div>
+                  )}
 
                       {/* Discover More - clearly separated section (wider than main) */}
                       {results.length > 0 && (

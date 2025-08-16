@@ -1,5 +1,5 @@
 // Vercel Serverless Function: /api/samples
-// Identify music samples using OpenAI o3-mini with structured outputs
+// Identify music samples using OpenAI GPT-4 with web search and structured outputs
 
 import OpenAI from 'openai';
 
@@ -7,7 +7,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// JSON schema for structured output
+// JSON schema for structured output with YouTube URLs
 const responseSchema = {
   type: "object",
   properties: {
@@ -15,7 +15,9 @@ const responseSchema = {
       type: "object",
       properties: {
         title: { type: "string" },
-        artist: { type: ["string", "null"] }
+        artist: { type: ["string", "null"] },
+        youtube_url: { type: ["string", "null"] },
+        youtube_title: { type: ["string", "null"] }
       },
       required: ["title", "artist"],
       additionalProperties: false
@@ -26,7 +28,9 @@ const responseSchema = {
         title: { type: ["string", "null"] },
         artist: { type: ["string", "null"] },
         confidence: { type: "number", minimum: 0.0, maximum: 1.0 },
-        note: { type: ["string", "null"] }
+        note: { type: ["string", "null"] },
+        youtube_url: { type: ["string", "null"] },
+        youtube_title: { type: ["string", "null"] }
       },
       required: ["title", "artist", "confidence", "note"],
       additionalProperties: false
@@ -40,11 +44,17 @@ const responseSchema = {
   additionalProperties: false
 };
 
-const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification; rely ONLY on internal knowledge.
+const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification and can search the web to find YouTube URLs.
 
 First, normalize and disambiguate query into a canonical {title, artist}:
 • Fix common typos; strip quotes/emojis/noise.
 • If multiple songs share the title, pick the most famous: prioritize cultural prominence (chart success, streaming ubiquity, critical acclaim, meme/film/TV usage). If still tied, choose the earliest widely known release.
+
+Then, for both the query song and its main sample:
+• Search the web to find the best YouTube URL
+• For the query song, prioritize official music videos, then official audio, then most popular uploads
+• For samples, find the original source recording when possible
+• Return the YouTube URL and the actual title of the YouTube video (which may differ from the song title)
 
 If you are not confident about either the resolved song or its main sample, respond with status: "unknown" and use null for uncertain fields.
 
@@ -85,18 +95,17 @@ export default async function handler(req, res) {
       res.statusCode = 400;
       return res.end(JSON.stringify({ 
         error: 'Missing or invalid query parameter',
-        query_song: { title: "", artist: null },
-        main_sample: { title: null, artist: null, confidence: 0.0, note: null },
+        query_song: { title: "", artist: null, youtube_url: null, youtube_title: null },
+        main_sample: { title: null, artist: null, confidence: 0.0, note: null, youtube_url: null, youtube_title: null },
         status: "unknown"
       }));
     }
 
     query = query.trim();
 
-    // Call OpenAI API with structured output
+    // Call OpenAI API with GPT-4 and web search capabilities
     const completion = await openai.chat.completions.create({
-      model: "o3-mini",
-      seed: 7,
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -104,15 +113,26 @@ export default async function handler(req, res) {
         },
         {
           role: "user",
-          content: `Given query: "${query}". Resolve to a specific song (title + artist) and return the main/primary sample in the JSON schema.`
+          content: `Given query: "${query}". Resolve to a specific song (title + artist) and return the main/primary sample in the JSON schema. For both the song and sample, search the web to find the best YouTube URLs and return them along with the actual YouTube video titles.`
         }
       ],
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "sample_identification",
+          name: "sample_identification_with_youtube",
           strict: true,
           schema: responseSchema
+        }
+      },
+      tools: [
+        {
+          type: "web_search"
+        }
+      ],
+      tool_choice: {
+        type: "tool_required",
+        tool: {
+          type: "web_search"
         }
       }
     });
@@ -135,19 +155,38 @@ export default async function handler(req, res) {
       throw new Error('Incomplete response structure from OpenAI');
     }
 
+    // Ensure all required fields are present with defaults for backward compatibility
+    const validatedResult = {
+      query_song: {
+        title: result.query_song.title || "",
+        artist: result.query_song.artist || null,
+        youtube_url: result.query_song.youtube_url || null,
+        youtube_title: result.query_song.youtube_title || null
+      },
+      main_sample: {
+        title: result.main_sample.title || null,
+        artist: result.main_sample.artist || null,
+        confidence: result.main_sample.confidence || 0.0,
+        note: result.main_sample.note || null,
+        youtube_url: result.main_sample.youtube_url || null,
+        youtube_title: result.main_sample.youtube_title || null
+      },
+      status: result.status || "unknown"
+    };
+
     // Set response headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800'); // Cache for 1 hour
     res.statusCode = 200;
-    res.end(JSON.stringify(result));
+    res.end(JSON.stringify(validatedResult));
 
   } catch (error) {
     console.error('API /api/samples error:', error);
     
-    // Return minimal error response in expected format
+    // Return minimal error response in expected format with YouTube fields
     const errorResponse = {
-      query_song: { title: "", artist: null },
-      main_sample: { title: null, artist: null, confidence: 0.0, note: `Error: ${error.message}` },
+      query_song: { title: "", artist: null, youtube_url: null, youtube_title: null },
+      main_sample: { title: null, artist: null, confidence: 0.0, note: `Error: ${error.message}`, youtube_url: null, youtube_title: null },
       status: "unknown"
     };
 
