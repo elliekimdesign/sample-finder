@@ -8,7 +8,7 @@ const perplexityClient = new OpenAI({
   baseURL: 'https://api.perplexity.ai'
 });
 
-// JSON schema for structured output with real-time web search results
+// JSON schema for structured output focusing on song and sample identification only
 const responseSchema = {
   type: "object",
   properties: {
@@ -17,8 +17,8 @@ const responseSchema = {
       properties: {
         title: { type: "string" },
         artist: { type: ["string", "null"] },
-        youtube_url: { type: ["string", "null"] },
-        youtube_title: { type: ["string", "null"] }
+        year: { type: ["number", "null"] },
+        album: { type: ["string", "null"] }
       },
       required: ["title", "artist"],
       additionalProperties: false
@@ -28,10 +28,10 @@ const responseSchema = {
       properties: {
         title: { type: ["string", "null"] },
         artist: { type: ["string", "null"] },
+        year: { type: ["number", "null"] },
+        album: { type: ["string", "null"] },
         confidence: { type: "number", minimum: 0.0, maximum: 1.0 },
-        note: { type: ["string", "null"] },
-        youtube_url: { type: ["string", "null"] },
-        youtube_title: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
       },
       required: ["title", "artist", "confidence", "note"],
       additionalProperties: false
@@ -45,18 +45,24 @@ const responseSchema = {
   additionalProperties: false
 };
 
-const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification and can search the web in real-time to find accurate information.
+const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification. Focus ONLY on identifying songs and samples - do NOT search for YouTube URLs.
 
 First, normalize and disambiguate query into a canonical {title, artist}:
 • Fix common typos; strip quotes/emojis/noise.
 • If multiple songs share the title, pick the most famous: prioritize cultural prominence (chart success, streaming ubiquity, critical acclaim, meme/film/TV usage). If still tied, choose the earliest widely known release.
+• ALWAYS prefer the OFFICIAL/ORIGINAL version over remixes, karaoke, covers, or alternate versions.
 
-Then, for both the query song and its main sample:
-• Search the web to find the best YouTube URLs and actual video titles
-• For the query song, prioritize official music videos, then official audio, then most popular uploads
-• For samples, find the original source recording when possible
-• Return the actual YouTube URL and the exact title of the YouTube video (which may differ from the song title)
-• Use web search to verify sample information and find the most accurate details
+Then, identify the main/primary sample used in the song:
+• Search the web to verify sample information and find the most accurate details
+• Identify the original source track that was sampled
+• Provide confidence level (0.0 to 1.0) based on how certain you are
+• Include relevant notes about the sample (what part was sampled, how it was used, etc.)
+
+IMPORTANT: 
+- Do NOT include YouTube URLs in your response
+- Do NOT search for or provide video links
+- Focus only on accurate song and sample identification
+- Prefer well-documented, verified samples over speculation
 
 If you are not confident about either the resolved song or its main sample, respond with status: "unknown" and use null for uncertain fields.
 
@@ -115,13 +121,13 @@ export default async function handler(req, res) {
         },
         {
           role: "user",
-          content: `Given query: "${query}". Resolve to a specific song (title + artist) and return the main/primary sample in the JSON schema. For both the song and sample, search the web to find the best YouTube URLs and return them along with the actual YouTube video titles.`
+          content: `Given query: "${query}". Resolve to a specific song (title + artist) and identify the main/primary sample used in that song. Focus on accuracy - prefer the official/original version of the song, not remixes or karaoke versions. Do NOT include YouTube URLs.`
         }
       ],
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "sample_identification_with_youtube",
+          name: "sample_identification_only",
           strict: true,
           schema: responseSchema
         }

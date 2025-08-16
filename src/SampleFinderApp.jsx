@@ -47,7 +47,40 @@ export default function SampleFinderApp() {
     return res.json();
   }
 
-  // Fetch sample identification from OpenAI API
+  // Fetch YouTube URL for a specific song
+  async function fetchYouTubeUrl(title, artist) {
+    try {
+      console.log('🎥 Fetching YouTube URL for:', title, 'by', artist);
+      
+      const response = await fetch(`${apiBase}/api/youtube-search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ title, artist })
+      });
+
+      if (!response.ok) {
+        throw new Error(`YouTube search API ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('🎥 YouTube search response:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ YouTube search error:', error);
+      return {
+        youtube_url: null,
+        youtube_title: null,
+        confidence: 0.0,
+        search_strategy_used: `Error: ${error.message}`
+      };
+    }
+  }
+
+  // Fetch sample identification from Perplexity API
   async function fetchSampleIdentification(query) {
     try {
       setSampleApiLoading(true);
@@ -96,12 +129,62 @@ export default function SampleFinderApp() {
     }
   }
 
+  // Enhance results with YouTube URLs (Step 2)
+  async function enhanceResultsWithYouTube(results) {
+    if (!Array.isArray(results) || results.length === 0) {
+      return results;
+    }
+
+    console.log('🎥 Starting YouTube URL enhancement for', results.length, 'results');
+    
+    const enhancedResults = await Promise.all(
+      results.map(async (result) => {
+        const enhancedResult = { ...result };
+        
+        // Fetch YouTube URL for main song if needed
+        if (result.needsYouTubeSearch && result.title && result.artist) {
+          try {
+            const youtubeData = await fetchYouTubeUrl(result.title, result.artist);
+            if (youtubeData.youtube_url && youtubeData.confidence > 0.5) {
+              enhancedResult.youtube = youtubeData.youtube_url;
+              enhancedResult.youtubeTitle = youtubeData.youtube_title;
+              enhancedResult.youtubeConfidence = youtubeData.confidence;
+            }
+            enhancedResult.needsYouTubeSearch = false;
+          } catch (error) {
+            console.error('❌ Failed to fetch YouTube URL for main song:', error);
+          }
+        }
+        
+        // Fetch YouTube URL for sample if needed
+        if (result.sampledFrom?.needsYouTubeSearch && result.sampledFrom.title && result.sampledFrom.artist) {
+          try {
+            const sampleYoutubeData = await fetchYouTubeUrl(result.sampledFrom.title, result.sampledFrom.artist);
+            if (sampleYoutubeData.youtube_url && sampleYoutubeData.confidence > 0.5) {
+              enhancedResult.sampledFrom.youtube = sampleYoutubeData.youtube_url;
+              enhancedResult.sampledFrom.youtubeTitle = sampleYoutubeData.youtube_title;
+              enhancedResult.sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
+            }
+            enhancedResult.sampledFrom.needsYouTubeSearch = false;
+          } catch (error) {
+            console.error('❌ Failed to fetch YouTube URL for sample:', error);
+          }
+        }
+        
+        return enhancedResult;
+      })
+    );
+    
+    console.log('✅ YouTube URL enhancement completed');
+    return enhancedResults;
+  }
+
   // Helper function to safely join artists array
   function safeJoinArtists(artists) {
     return Array.isArray(artists) && artists.length > 0 ? artists.join(', ') : null;
   }
 
-  // Convert API response to local DB format
+  // Convert API response to local DB format (Step 1: Song/Sample identification only)
   function convertApiResponseToLocalFormat(apiResponse) {
     try {
       // Validate API response structure
@@ -122,11 +205,13 @@ export default function SampleFinderApp() {
       const track = {
         title: query_song.title.trim(),
         artist: (query_song.artist && typeof query_song.artist === 'string') ? query_song.artist.trim() : 'Unknown Artist',
-        year: new Date().getFullYear(), // Default to current year
-        youtube: query_song.youtube_url || '', // Use YouTube URL from API if available
+        year: query_song.year || new Date().getFullYear(),
+        album: query_song.album || null,
+        youtube: '', // Will be populated by Step 2 (YouTube search)
         thumbnail: '', // Will be populated by Spotify search
         isApiResult: true, // Flag to indicate this came from API
-        apiConfidence: main_sample?.confidence || 0
+        apiConfidence: main_sample?.confidence || 0,
+        needsYouTubeSearch: true // Flag to indicate YouTube search is needed
       };
 
       // Add sample information if available
@@ -134,10 +219,12 @@ export default function SampleFinderApp() {
         track.sampledFrom = {
           title: main_sample.title.trim(),
           artist: (main_sample.artist && typeof main_sample.artist === 'string') ? main_sample.artist.trim() : 'Unknown Artist',
-          year: null, // API doesn't provide year for samples
-          youtube: main_sample.youtube_url || '', // Use YouTube URL from API if available
+          year: main_sample.year || null,
+          album: main_sample.album || null,
+          youtube: '', // Will be populated by Step 2 (YouTube search)
           thumbnail: '',
-          note: main_sample.note || null
+          note: main_sample.note || null,
+          needsYouTubeSearch: true // Flag to indicate YouTube search is needed
         };
       } else if (main_sample?.note) {
         // Store the note even if no sample was identified
@@ -471,9 +558,11 @@ export default function SampleFinderApp() {
     // Always use AI API for all searches
     console.log('🤖 Using AI API for search:', searchTerm);
     
-    // Call the sample identification API
+    // Call the sample identification API (Two-step process)
     (async () => {
       try {
+        // Step 1: Get song and sample identification
+        console.log('🎵 Step 1: Identifying song and sample...');
         const apiResponse = await fetchSampleIdentification(searchTerm);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
@@ -490,8 +579,18 @@ export default function SampleFinderApp() {
           );
           
           if (validResults.length > 0) {
-            console.log('✅ Sample API found valid results:', validResults);
+            console.log('✅ Step 1 completed - Sample API found valid results:', validResults);
+            
+            // Set initial results (without YouTube URLs)
             setResults(validResults);
+            
+            // Step 2: Enhance with YouTube URLs
+            console.log('🎥 Step 2: Fetching YouTube URLs...');
+            const enhancedResults = await enhanceResultsWithYouTube(validResults);
+            console.log('✅ Step 2 completed - Enhanced results with YouTube URLs:', enhancedResults);
+            
+            // Update results with YouTube URLs
+            setResults(enhancedResults);
           } else {
             console.log('❌ Sample API returned no valid results after filtering');
             setResults([]); // Set to empty array to trigger category screen
@@ -545,6 +644,8 @@ export default function SampleFinderApp() {
     
     (async () => {
       try {
+        // Step 1: Get song and sample identification
+        console.log('🎵 Step 1: Identifying song and sample for album search...');
         const apiResponse = await fetchSampleIdentification(trackTitle);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
@@ -561,8 +662,18 @@ export default function SampleFinderApp() {
           );
           
           if (validResults.length > 0) {
-            console.log('✅ Sample API found valid results for album search:', validResults);
+            console.log('✅ Step 1 completed - Sample API found valid results for album search:', validResults);
+            
+            // Set initial results (without YouTube URLs)
             setResults(validResults);
+            
+            // Step 2: Enhance with YouTube URLs
+            console.log('🎥 Step 2: Fetching YouTube URLs for album search...');
+            const enhancedResults = await enhanceResultsWithYouTube(validResults);
+            console.log('✅ Step 2 completed - Enhanced album search results with YouTube URLs:', enhancedResults);
+            
+            // Update results with YouTube URLs
+            setResults(enhancedResults);
           } else {
             console.log('❌ Sample API returned no valid results for album search after filtering');
             setResults([]);
