@@ -1,10 +1,11 @@
 // Vercel Serverless Function: /api/samples
 // Identify music samples using Perplexity Sonar with real-time web search
 
-import { perplexity } from '@ai-sdk/perplexity';
+import OpenAI from 'openai';
 
-const perplexityClient = perplexity({
+const perplexityClient = new OpenAI({
   apiKey: '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',
+  baseURL: 'https://api.perplexity.ai'
 });
 
 // JSON schema for structured output with real-time web search results
@@ -105,7 +106,7 @@ export default async function handler(req, res) {
     query = query.trim();
 
     // Call Perplexity API with Sonar model for web search capabilities
-    const completion = await perplexityClient.chat({
+    const completion = await perplexityClient.chat.completions.create({
       model: "sonar-medium-online",
       messages: [
         {
@@ -125,11 +126,14 @@ export default async function handler(req, res) {
           schema: responseSchema
         }
       },
+      search_mode: "web", // Enable web search for real-time information
+      temperature: 0.2, // Lower temperature for more consistent results
+      max_tokens: 2000, // Allow enough tokens for detailed responses
       // Perplexity Sonar can search the web in real-time for accurate information
     });
 
     // Parse the response
-    const content = completion.choices?.[0]?.message?.content || completion.content;
+    const content = completion.choices[0]?.message?.content;
     if (!content) {
       throw new Error('Empty response from Perplexity');
     }

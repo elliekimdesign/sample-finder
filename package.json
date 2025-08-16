@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ai-sdk/perplexity": "^2.0.3",
     "dotenv": "^17.2.1",
+    "openai": "^5.12.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-player": "^3.3.1"
