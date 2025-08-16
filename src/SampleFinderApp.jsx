@@ -103,55 +103,74 @@ export default function SampleFinderApp() {
 
   // Convert API response to local DB format
   function convertApiResponseToLocalFormat(apiResponse) {
-    const { query_song, main_sample, status } = apiResponse;
-    
-    if (status === 'unknown' || !query_song?.title) {
-      return null;
-    }
+    try {
+      // Validate API response structure
+      if (!apiResponse || typeof apiResponse !== 'object') {
+        console.warn('❌ Invalid API response structure:', apiResponse);
+        return [];
+      }
 
-    // Create a track object that matches local DB structure
-    const track = {
-      title: query_song.title,
-      artist: query_song.artist || 'Unknown Artist',
-      year: new Date().getFullYear(), // Default to current year
-      youtube: query_song.youtube_url || '', // Use YouTube URL from API if available
-      thumbnail: '', // Will be populated by Spotify search
-      isApiResult: true, // Flag to indicate this came from API
-      apiConfidence: main_sample?.confidence || 0
-    };
+      const { query_song, main_sample, status } = apiResponse;
+      
+      // Check if we have the minimum required data
+      if (status === 'unknown' || !query_song?.title || typeof query_song.title !== 'string') {
+        console.warn('❌ API response missing required data:', { status, query_song });
+        return [];
+      }
 
-    // Add sample information if available
-    if (main_sample?.title && main_sample.title !== 'none' && main_sample.confidence > 0) {
-      track.sampledFrom = {
-        title: main_sample.title,
-        artist: main_sample.artist || 'Unknown Artist',
-        year: null, // API doesn't provide year for samples
-        youtube: main_sample.youtube_url || '', // Use YouTube URL from API if available
-        thumbnail: '',
-        note: main_sample.note
+      // Create a track object that matches local DB structure
+      const track = {
+        title: query_song.title.trim(),
+        artist: (query_song.artist && typeof query_song.artist === 'string') ? query_song.artist.trim() : 'Unknown Artist',
+        year: new Date().getFullYear(), // Default to current year
+        youtube: query_song.youtube_url || '', // Use YouTube URL from API if available
+        thumbnail: '', // Will be populated by Spotify search
+        isApiResult: true, // Flag to indicate this came from API
+        apiConfidence: main_sample?.confidence || 0
       };
-    } else if (main_sample?.note) {
-      // Store the note even if no sample was identified
-      track.apiNote = main_sample.note;
+
+      // Add sample information if available
+      if (main_sample?.title && main_sample.title !== 'none' && main_sample.confidence > 0) {
+        track.sampledFrom = {
+          title: main_sample.title.trim(),
+          artist: (main_sample.artist && typeof main_sample.artist === 'string') ? main_sample.artist.trim() : 'Unknown Artist',
+          year: null, // API doesn't provide year for samples
+          youtube: main_sample.youtube_url || '', // Use YouTube URL from API if available
+          thumbnail: '',
+          note: main_sample.note || null
+        };
+      } else if (main_sample?.note) {
+        // Store the note even if no sample was identified
+        track.apiNote = main_sample.note;
+      }
+
+      // Debug logging for YouTube URLs
+      console.log('🎵 Converting API response to track format:', {
+        querySong: {
+          title: track.title,
+          artist: track.artist,
+          youtube: track.youtube,
+          youtubeUrl: query_song.youtube_url
+        },
+        sample: track.sampledFrom ? {
+          title: track.sampledFrom.title,
+          artist: track.sampledFrom.artist,
+          youtube: track.sampledFrom.youtube,
+          youtubeUrl: main_sample.youtube_url
+        } : null
+      });
+
+      // Validate the final track object before returning
+      if (!track.title || !track.artist) {
+        console.warn('❌ Track object missing required fields:', track);
+        return [];
+      }
+
+      return [track]; // Return as array to match local DB format
+    } catch (error) {
+      console.error('❌ Error converting API response:', error, apiResponse);
+      return []; // Return empty array on any error
     }
-
-    // Debug logging for YouTube URLs
-    console.log('🎵 Converting API response to track format:', {
-      querySong: {
-        title: track.title,
-        artist: track.artist,
-        youtube: track.youtube,
-        youtubeUrl: query_song.youtube_url
-      },
-      sample: track.sampledFrom ? {
-        title: track.sampledFrom.title,
-        artist: track.sampledFrom.artist,
-        youtube: track.sampledFrom.youtube,
-        youtubeUrl: main_sample.youtube_url
-      } : null
-    });
-
-    return [track]; // Return as array to match local DB format
   }
 
   // Lightweight dominant color extraction using canvas (best-effort)
@@ -458,9 +477,25 @@ export default function SampleFinderApp() {
         const apiResponse = await fetchSampleIdentification(searchTerm);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
-        if (convertedResults && Array.isArray(convertedResults) && convertedResults.length > 0) {
-          console.log('✅ Sample API found results:', convertedResults);
-          setResults(convertedResults);
+        // Validate that convertedResults is an array and contains valid track objects
+        if (Array.isArray(convertedResults) && convertedResults.length > 0) {
+          // Double-check that all results have required properties
+          const validResults = convertedResults.filter(item => 
+            item && 
+            typeof item === 'object' && 
+            typeof item.title === 'string' && 
+            item.title.trim().length > 0 &&
+            typeof item.artist === 'string' && 
+            item.artist.trim().length > 0
+          );
+          
+          if (validResults.length > 0) {
+            console.log('✅ Sample API found valid results:', validResults);
+            setResults(validResults);
+          } else {
+            console.log('❌ Sample API returned no valid results after filtering');
+            setResults([]); // Set to empty array to trigger category screen
+          }
         } else {
           console.log('❌ Sample API returned no results');
           setResults([]); // Set to empty array to trigger category screen
@@ -513,9 +548,25 @@ export default function SampleFinderApp() {
         const apiResponse = await fetchSampleIdentification(trackTitle);
         const convertedResults = convertApiResponseToLocalFormat(apiResponse);
         
-        if (convertedResults && Array.isArray(convertedResults) && convertedResults.length > 0) {
-          console.log('✅ Sample API found results for album search:', convertedResults);
-          setResults(convertedResults);
+        // Validate that convertedResults is an array and contains valid track objects
+        if (Array.isArray(convertedResults) && convertedResults.length > 0) {
+          // Double-check that all results have required properties
+          const validResults = convertedResults.filter(item => 
+            item && 
+            typeof item === 'object' && 
+            typeof item.title === 'string' && 
+            item.title.trim().length > 0 &&
+            typeof item.artist === 'string' && 
+            item.artist.trim().length > 0
+          );
+          
+          if (validResults.length > 0) {
+            console.log('✅ Sample API found valid results for album search:', validResults);
+            setResults(validResults);
+          } else {
+            console.log('❌ Sample API returned no valid results for album search after filtering');
+            setResults([]);
+          }
         } else {
           console.log('❌ Sample API returned no results for album search');
           setResults([]);
@@ -1136,7 +1187,14 @@ export default function SampleFinderApp() {
                             </div>
                           )}
 
-        {results.filter(item => item && item.title && item.artist).map((item, i) => (
+        {results.filter(item => 
+          item && 
+          typeof item === 'object' && 
+          typeof item.title === 'string' && 
+          item.title.trim().length > 0 &&
+          typeof item.artist === 'string' && 
+          item.artist.trim().length > 0
+        ).map((item, i) => (
                         <div
                           key={i}
                           className={`${i > 0 ? 'pt-12 mt-12' : 'pt-8 mt-8'}`}
