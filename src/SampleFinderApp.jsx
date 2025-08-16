@@ -132,17 +132,17 @@ export default function SampleFinderApp() {
     }
   }
 
-  // Enhance results with YouTube URLs (Step 2)
-  async function enhanceResultsWithYouTube(results) {
-    if (!Array.isArray(results) || results.length === 0) {
-      return results;
+  // Enhance results with YouTube URLs (Step 2) - Progressive loading
+  async function enhanceResultsWithYouTube(initialResults) {
+    if (!Array.isArray(initialResults) || initialResults.length === 0) {
+      return initialResults;
     }
 
-    console.log('🎥 Starting YouTube URL enhancement for', results.length, 'results');
+    console.log('🎥 Starting YouTube URL enhancement for', initialResults.length, 'results');
     
     // Create loading keys for tracking
     const loadingKeys = new Set();
-    results.forEach((result, index) => {
+    initialResults.forEach((result, index) => {
       if (result.needsYouTubeSearch) {
         loadingKeys.add(`main-${index}`);
       }
@@ -154,70 +154,101 @@ export default function SampleFinderApp() {
     // Set loading state
     setYoutubeLoading(loadingKeys);
     
-    const enhancedResults = await Promise.all(
-      results.map(async (result, index) => {
-        const enhancedResult = { ...result };
-        
-        // Fetch YouTube URL for main song if needed
-        if (result.needsYouTubeSearch && result.title && result.artist) {
-          try {
-            const youtubeData = await fetchYouTubeUrl(result.title, result.artist);
-            if (youtubeData.youtube_url && youtubeData.confidence > 0.5) {
-              enhancedResult.youtube = youtubeData.youtube_url;
-              enhancedResult.youtubeTitle = youtubeData.youtube_title;
-              enhancedResult.youtubeConfidence = youtubeData.confidence;
-            }
-            enhancedResult.needsYouTubeSearch = false;
-            
-            // Remove from loading state
-            setYoutubeLoading(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(`main-${index}`);
-              return newSet;
-            });
-          } catch (error) {
-            console.error('❌ Failed to fetch YouTube URL for main song:', error);
-            setYoutubeLoading(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(`main-${index}`);
-              return newSet;
-            });
-          }
-        }
-        
-        // Fetch YouTube URL for sample if needed
-        if (result.sampledFrom?.needsYouTubeSearch && result.sampledFrom.title && result.sampledFrom.artist) {
-          try {
-            const sampleYoutubeData = await fetchYouTubeUrl(result.sampledFrom.title, result.sampledFrom.artist);
-            if (sampleYoutubeData.youtube_url && sampleYoutubeData.confidence > 0.5) {
-              enhancedResult.sampledFrom.youtube = sampleYoutubeData.youtube_url;
-              enhancedResult.sampledFrom.youtubeTitle = sampleYoutubeData.youtube_title;
-              enhancedResult.sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
-            }
-            enhancedResult.sampledFrom.needsYouTubeSearch = false;
-            
-            // Remove from loading state
-            setYoutubeLoading(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(`sample-${index}`);
-              return newSet;
-            });
-          } catch (error) {
-            console.error('❌ Failed to fetch YouTube URL for sample:', error);
-            setYoutubeLoading(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(`sample-${index}`);
-              return newSet;
-            });
-          }
-        }
-        
-        return enhancedResult;
-      })
-    );
+    // Create a copy of results that we'll update progressively
+    let currentResults = [...initialResults];
+    
+    // Process each result individually and update state immediately
+    const promises = initialResults.map(async (result, index) => {
+      const tasks = [];
+      
+      // Fetch YouTube URL for main song if needed
+      if (result.needsYouTubeSearch && result.title && result.artist) {
+        tasks.push(
+          fetchYouTubeUrl(result.title, result.artist)
+            .then(youtubeData => {
+              // Update results immediately when this completes
+              setResults(prevResults => {
+                const newResults = [...prevResults];
+                if (newResults[index]) {
+                  if (youtubeData.youtube_url && youtubeData.confidence > 0.5) {
+                    newResults[index].youtube = youtubeData.youtube_url;
+                    newResults[index].youtubeTitle = youtubeData.youtube_title;
+                    newResults[index].youtubeConfidence = youtubeData.confidence;
+                    console.log(`🎥 Main video loaded for result ${index}:`, youtubeData.youtube_url);
+                  } else {
+                    console.log(`❌ Main video not found for result ${index} (confidence: ${youtubeData.confidence})`);
+                  }
+                  newResults[index].needsYouTubeSearch = false;
+                }
+                return newResults;
+              });
+              
+              // Remove from loading state
+              setYoutubeLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(`main-${index}`);
+                return newSet;
+              });
+            })
+            .catch(error => {
+              console.error('❌ Failed to fetch YouTube URL for main song:', error);
+              setYoutubeLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(`main-${index}`);
+                return newSet;
+              });
+            })
+        );
+      }
+      
+      // Fetch YouTube URL for sample if needed
+      if (result.sampledFrom?.needsYouTubeSearch && result.sampledFrom.title && result.sampledFrom.artist) {
+        tasks.push(
+          fetchYouTubeUrl(result.sampledFrom.title, result.sampledFrom.artist)
+            .then(sampleYoutubeData => {
+              // Update results immediately when this completes
+              setResults(prevResults => {
+                const newResults = [...prevResults];
+                if (newResults[index]?.sampledFrom) {
+                  if (sampleYoutubeData.youtube_url && sampleYoutubeData.confidence > 0.5) {
+                    newResults[index].sampledFrom.youtube = sampleYoutubeData.youtube_url;
+                    newResults[index].sampledFrom.youtubeTitle = sampleYoutubeData.youtube_title;
+                    newResults[index].sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
+                    console.log(`🎥 Sample video loaded for result ${index}:`, sampleYoutubeData.youtube_url);
+                  } else {
+                    console.log(`❌ Sample video not found for result ${index} (confidence: ${sampleYoutubeData.confidence})`);
+                  }
+                  newResults[index].sampledFrom.needsYouTubeSearch = false;
+                }
+                return newResults;
+              });
+              
+              // Remove from loading state
+              setYoutubeLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(`sample-${index}`);
+                return newSet;
+              });
+            })
+            .catch(error => {
+              console.error('❌ Failed to fetch YouTube URL for sample:', error);
+              setYoutubeLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(`sample-${index}`);
+                return newSet;
+              });
+            })
+        );
+      }
+      
+      return Promise.all(tasks);
+    });
+    
+    // Wait for all YouTube fetches to complete (but results are updated progressively)
+    await Promise.all(promises);
     
     console.log('✅ YouTube URL enhancement completed');
-    return enhancedResults;
+    return currentResults; // This return value won't be used since we update state directly
   }
 
   // Helper function to safely join artists array
@@ -626,13 +657,10 @@ export default function SampleFinderApp() {
             // Set initial results (without YouTube URLs)
             setResults(validResults);
             
-            // Step 2: Enhance with YouTube URLs
+            // Step 2: Enhance with YouTube URLs (updates results progressively)
             console.log('🎥 Step 2: Fetching YouTube URLs...');
-            const enhancedResults = await enhanceResultsWithYouTube(validResults);
-            console.log('✅ Step 2 completed - Enhanced results with YouTube URLs:', enhancedResults);
-            
-            // Update results with YouTube URLs
-            setResults(enhancedResults);
+            await enhanceResultsWithYouTube(validResults);
+            console.log('✅ Step 2 completed - YouTube URLs will appear as they load');
           } else {
             console.log('❌ Sample API returned no valid results after filtering');
             setResults([]); // Set to empty array to trigger category screen
@@ -710,13 +738,10 @@ export default function SampleFinderApp() {
             // Set initial results (without YouTube URLs)
             setResults(validResults);
             
-            // Step 2: Enhance with YouTube URLs
+            // Step 2: Enhance with YouTube URLs (updates results progressively)
             console.log('🎥 Step 2: Fetching YouTube URLs for album search...');
-            const enhancedResults = await enhanceResultsWithYouTube(validResults);
-            console.log('✅ Step 2 completed - Enhanced album search results with YouTube URLs:', enhancedResults);
-            
-            // Update results with YouTube URLs
-            setResults(enhancedResults);
+            await enhanceResultsWithYouTube(validResults);
+            console.log('✅ Step 2 completed - YouTube URLs will appear as they load');
           } else {
             console.log('❌ Sample API returned no valid results for album search after filtering');
             setResults([]);
