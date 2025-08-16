@@ -107,7 +107,7 @@ export default async function handler(req, res) {
 
     // Call Perplexity API with Sonar model for web search capabilities
     const completion = await perplexityClient.chat.completions.create({
-      model: "sonar-medium-online",
+      model: "sonar",
       messages: [
         {
           role: "system",
