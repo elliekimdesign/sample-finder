@@ -1,13 +1,13 @@
 // Vercel Serverless Function: /api/samples
-// Identify music samples using OpenAI GPT-4 with web search and structured outputs
+// Identify music samples using Perplexity Sonar with real-time web search
 
-import OpenAI from 'openai';
+import { perplexity } from '@ai-sdk/perplexity';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const perplexityClient = perplexity({
+  apiKey: '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',
 });
 
-// JSON schema for structured output with YouTube URLs
+// JSON schema for structured output with real-time web search results
 const responseSchema = {
   type: "object",
   properties: {
@@ -44,17 +44,18 @@ const responseSchema = {
   additionalProperties: false
 };
 
-const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification and can search the web to find YouTube URLs.
+const systemPrompt = `You are a super knowledgeable music-data assistant that has deep expertise in sample identification and can search the web in real-time to find accurate information.
 
 First, normalize and disambiguate query into a canonical {title, artist}:
 • Fix common typos; strip quotes/emojis/noise.
 • If multiple songs share the title, pick the most famous: prioritize cultural prominence (chart success, streaming ubiquity, critical acclaim, meme/film/TV usage). If still tied, choose the earliest widely known release.
 
 Then, for both the query song and its main sample:
-• Search the web to find the best YouTube URL
+• Search the web to find the best YouTube URLs and actual video titles
 • For the query song, prioritize official music videos, then official audio, then most popular uploads
 • For samples, find the original source recording when possible
-• Return the YouTube URL and the actual title of the YouTube video (which may differ from the song title)
+• Return the actual YouTube URL and the exact title of the YouTube video (which may differ from the song title)
+• Use web search to verify sample information and find the most accurate details
 
 If you are not confident about either the resolved song or its main sample, respond with status: "unknown" and use null for uncertain fields.
 
@@ -103,9 +104,9 @@ export default async function handler(req, res) {
 
     query = query.trim();
 
-    // Call OpenAI API with GPT-4 and web search capabilities
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Call Perplexity API with Sonar model for web search capabilities
+    const completion = await perplexityClient.chat({
+      model: "sonar-medium-online",
       messages: [
         {
           role: "system",
@@ -124,35 +125,25 @@ export default async function handler(req, res) {
           schema: responseSchema
         }
       },
-      tools: [
-        {
-          type: "web_search"
-        }
-      ],
-      tool_choice: {
-        type: "tool_required",
-        tool: {
-          type: "web_search"
-        }
-      }
+      // Perplexity Sonar can search the web in real-time for accurate information
     });
 
     // Parse the response
-    const content = completion.choices[0]?.message?.content;
+    const content = completion.choices?.[0]?.message?.content || completion.content;
     if (!content) {
-      throw new Error('Empty response from OpenAI');
+      throw new Error('Empty response from Perplexity');
     }
 
     let result;
     try {
       result = JSON.parse(content);
     } catch (parseError) {
-      throw new Error('Invalid JSON response from OpenAI: ' + parseError.message);
+      throw new Error('Invalid JSON response from Perplexity: ' + parseError.message);
     }
 
     // Validate the response structure
     if (!result.query_song || !result.main_sample || !result.status) {
-      throw new Error('Incomplete response structure from OpenAI');
+      throw new Error('Incomplete response structure from Perplexity');
     }
 
     // Ensure all required fields are present with defaults for backward compatibility
