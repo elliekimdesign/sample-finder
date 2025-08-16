@@ -35,6 +35,9 @@ export default function SampleFinderApp() {
   const [sampleApiLoading, setSampleApiLoading] = useState(false);
   const [sampleApiError, setSampleApiError] = useState('');
   const [lastApiQuery, setLastApiQuery] = useState('');
+  
+  // YouTube loading states
+  const [youtubeLoading, setYoutubeLoading] = useState(new Set()); // Track which items are loading YouTube URLs
 
   // Prefer serverless API on Vercel; fall back to Vercel prod domain on static hosts (e.g., GitHub Pages)
   const apiBase = (import.meta?.env?.VITE_API_BASE) || (typeof window !== 'undefined' && (window.__VITE_API_BASE__ || (window.location.hostname.endsWith('github.io') ? 'https://samplr-red.vercel.app' : 'https://samplr-red.vercel.app')));
@@ -137,8 +140,22 @@ export default function SampleFinderApp() {
 
     console.log('🎥 Starting YouTube URL enhancement for', results.length, 'results');
     
+    // Create loading keys for tracking
+    const loadingKeys = new Set();
+    results.forEach((result, index) => {
+      if (result.needsYouTubeSearch) {
+        loadingKeys.add(`main-${index}`);
+      }
+      if (result.sampledFrom?.needsYouTubeSearch) {
+        loadingKeys.add(`sample-${index}`);
+      }
+    });
+    
+    // Set loading state
+    setYoutubeLoading(loadingKeys);
+    
     const enhancedResults = await Promise.all(
-      results.map(async (result) => {
+      results.map(async (result, index) => {
         const enhancedResult = { ...result };
         
         // Fetch YouTube URL for main song if needed
@@ -151,8 +168,20 @@ export default function SampleFinderApp() {
               enhancedResult.youtubeConfidence = youtubeData.confidence;
             }
             enhancedResult.needsYouTubeSearch = false;
+            
+            // Remove from loading state
+            setYoutubeLoading(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(`main-${index}`);
+              return newSet;
+            });
           } catch (error) {
             console.error('❌ Failed to fetch YouTube URL for main song:', error);
+            setYoutubeLoading(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(`main-${index}`);
+              return newSet;
+            });
           }
         }
         
@@ -166,8 +195,20 @@ export default function SampleFinderApp() {
               enhancedResult.sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
             }
             enhancedResult.sampledFrom.needsYouTubeSearch = false;
+            
+            // Remove from loading state
+            setYoutubeLoading(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(`sample-${index}`);
+              return newSet;
+            });
           } catch (error) {
             console.error('❌ Failed to fetch YouTube URL for sample:', error);
+            setYoutubeLoading(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(`sample-${index}`);
+              return newSet;
+            });
           }
         }
         
@@ -544,6 +585,7 @@ export default function SampleFinderApp() {
     setShowSuggestions(false);
     setDiscoverPage(0); // Reset discover section to first page
     setIsDirectAlbumClick(false); // Reset album click flag
+    setYoutubeLoading(new Set()); // Clear YouTube loading states
     
     // If search term is empty, don't search
     if (!normalizedSearchTerm) {
@@ -630,6 +672,7 @@ export default function SampleFinderApp() {
     setSelectedCategory(null);
     setShowSuggestions(false);
     setDiscoverPage(0);
+    setYoutubeLoading(new Set()); // Clear YouTube loading states
     
     if (!normalizedSearchTerm) {
       setResults([]);
@@ -696,6 +739,7 @@ export default function SampleFinderApp() {
     setSelectedCategory(null);
     setHasSearched(false);
     setIsDirectAlbumClick(false);
+    setYoutubeLoading(new Set()); // Clear YouTube loading states
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1519,6 +1563,18 @@ export default function SampleFinderApp() {
                                       allowFullScreen
                                       className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
                                     />
+                                  ) : youtubeLoading.has(`main-${i}`) ? (
+                                    <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                      <div className="text-center text-white/40">
+                                        <div className="inline-flex items-center justify-center w-12 h-12 mb-2 animate-spin">
+                                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <p className="text-sm">Loading video...</p>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full h-full bg-white/5 flex items-center justify-center">
                                       <div className="text-center text-white/40">
@@ -1565,6 +1621,18 @@ export default function SampleFinderApp() {
                                       allowFullScreen
                                       className="w-full h-full filter grayscale group-hover:grayscale-0 transition-[filter] duration-400"
                                     />
+                                  ) : youtubeLoading.has(`sample-${i}`) ? (
+                                    <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                      <div className="text-center text-white/40">
+                                        <div className="inline-flex items-center justify-center w-12 h-12 mb-2 animate-spin">
+                                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <p className="text-sm">Loading video...</p>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full h-full bg-white/5 flex items-center justify-center">
                                       <div className="text-center text-white/40">
