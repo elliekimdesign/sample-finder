@@ -1427,20 +1427,26 @@ export default function SamplefindrApp() {
                             </div>
                           )}
 
-        {results.filter((item, originalIndex) => {
-          const isValid = item && 
-            typeof item === 'object' && 
-            typeof item.title === 'string' && 
-            item.title.trim().length > 0 &&
-            typeof item.artist === 'string' && 
-            item.artist.trim().length > 0;
-          
-          if (!isValid) {
-            console.warn(`⚠️ Filtering out invalid result at index ${originalIndex}:`, item);
-          }
-          
-          return isValid;
-        }).map((item, i) => (
+        {(Array.isArray(results) ? results : [])
+          .filter((item, originalIndex) => {
+            // More robust validation to prevent undefined errors
+            const isValid = item && 
+              typeof item === 'object' && 
+              item.title &&
+              typeof item.title === 'string' && 
+              item.title.trim().length > 0 &&
+              item.artist &&
+              typeof item.artist === 'string' && 
+              item.artist.trim().length > 0;
+            
+            if (!isValid) {
+              console.warn(`⚠️ Filtering out invalid result at index ${originalIndex}:`, item);
+            }
+            
+            return isValid;
+          })
+          .filter(item => item != null) // Additional safety filter to remove any null/undefined items
+          .map((item, i) => (
                         <div
                           key={i}
                           className={`${i > 0 ? 'pt-12 mt-12' : 'pt-8 mt-8'}`}
