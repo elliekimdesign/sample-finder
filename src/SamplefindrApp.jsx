@@ -1487,9 +1487,11 @@ export default function SamplefindrApp() {
                           </div>
 
                           {/* Album Info */}
-                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2">
-                            {/* Vertical Divider - only visible on large screens */}
-                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                          <div className={`grid grid-cols-1 ${item?.sampledFrom?.title ? 'xl:grid-cols-2' : ''} gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2`}>
+                            {/* Vertical Divider - only visible on large screens when there's a sample */}
+                            {item?.sampledFrom?.title && (
+                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                            )}
                             
                             {/* Left Side - Sampled Song */}
                             <div className="space-y-6">
@@ -1555,7 +1557,8 @@ export default function SamplefindrApp() {
                             </div>
 
                             {/* Right Side - Sample Source */}
-                            <div className="space-y-6">
+                            {item?.sampledFrom?.title && (
+                              <div className="space-y-6">
                               {/* Section Header */}
             <div>
                                 <div className="mb-4">
@@ -1615,13 +1618,16 @@ export default function SamplefindrApp() {
                                   )}
                                 </div>
                               </div>
-                            </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Video Player Cards */}
-                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative pt-12">
-                            {/* Vertical Divider - only visible on large screens */}
-                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                          <div className={`grid grid-cols-1 ${item?.sampledFrom?.title ? 'xl:grid-cols-2' : ''} gap-8 md:gap-12 xl:gap-16 relative pt-12`}>
+                            {/* Vertical Divider - only visible on large screens when there's a sample */}
+                            {item?.sampledFrom?.title && (
+                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                            )}
                             
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group">
@@ -1687,7 +1693,8 @@ export default function SamplefindrApp() {
                             </div>
 
                             {/* Right Side - Sample Source Video */}
-                            <div className="relative group">
+                            {item?.sampledFrom?.title && (
+                              <div className="relative group">
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
@@ -1742,7 +1749,8 @@ export default function SamplefindrApp() {
                                   )}
                                 </div>
                               </div>
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
