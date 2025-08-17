@@ -138,15 +138,29 @@ export default function SampleFinderApp() {
       return initialResults;
     }
 
-    console.log('🎥 Starting YouTube URL enhancement for', initialResults.length, 'results');
+    // Validate all results have required properties before starting enhancement
+    const validResults = initialResults.filter((result, index) => {
+      if (!result || typeof result !== 'object' || !result.title || !result.artist) {
+        console.warn(`⚠️ Skipping invalid result at index ${index}:`, result);
+        return false;
+      }
+      return true;
+    });
+
+    if (validResults.length === 0) {
+      console.warn('⚠️ No valid results to enhance with YouTube URLs');
+      return initialResults;
+    }
+
+    console.log('🎥 Starting YouTube URL enhancement for', validResults.length, 'valid results');
     
-    // Create loading keys for tracking
+    // Create loading keys for tracking (using original indices to match render)
     const loadingKeys = new Set();
     initialResults.forEach((result, index) => {
-      if (result.needsYouTubeSearch) {
+      if (result && result.needsYouTubeSearch) {
         loadingKeys.add(`main-${index}`);
       }
-      if (result.sampledFrom?.needsYouTubeSearch) {
+      if (result && result.sampledFrom?.needsYouTubeSearch) {
         loadingKeys.add(`sample-${index}`);
       }
     });
@@ -168,18 +182,31 @@ export default function SampleFinderApp() {
             .then(youtubeData => {
               // Update results immediately when this completes
               setResults(prevResults => {
-                const newResults = [...prevResults];
-                if (newResults[index]) {
-                  if (youtubeData.youtube_url && youtubeData.confidence > 0.5) {
-                    newResults[index].youtube = youtubeData.youtube_url;
-                    newResults[index].youtubeTitle = youtubeData.youtube_title;
-                    newResults[index].youtubeConfidence = youtubeData.confidence;
-                    console.log(`🎥 Main video loaded for result ${index}:`, youtubeData.youtube_url);
-                  } else {
-                    console.log(`❌ Main video not found for result ${index} (confidence: ${youtubeData.confidence})`);
-                  }
-                  newResults[index].needsYouTubeSearch = false;
+                // Validate that prevResults is an array and has the expected structure
+                if (!Array.isArray(prevResults) || prevResults.length <= index) {
+                  console.warn(`⚠️ Results array invalid or index ${index} out of bounds:`, prevResults);
+                  return prevResults;
                 }
+                
+                const newResults = [...prevResults];
+                const currentResult = newResults[index];
+                
+                // Validate the current result object
+                if (!currentResult || typeof currentResult !== 'object' || !currentResult.title) {
+                  console.warn(`⚠️ Invalid result object at index ${index}:`, currentResult);
+                  return prevResults; // Return unchanged if invalid
+                }
+                
+                if (youtubeData.youtube_url && youtubeData.confidence > 0.5) {
+                  newResults[index].youtube = youtubeData.youtube_url;
+                  newResults[index].youtubeTitle = youtubeData.youtube_title;
+                  newResults[index].youtubeConfidence = youtubeData.confidence;
+                  console.log(`🎥 Main video loaded for result ${index}:`, youtubeData.youtube_url);
+                } else {
+                  console.log(`❌ Main video not found for result ${index} (confidence: ${youtubeData.confidence})`);
+                }
+                newResults[index].needsYouTubeSearch = false;
+                
                 return newResults;
               });
               
@@ -192,6 +219,15 @@ export default function SampleFinderApp() {
             })
             .catch(error => {
               console.error('❌ Failed to fetch YouTube URL for main song:', error);
+              // Still need to clear loading state and mark as not needing search
+              setResults(prevResults => {
+                if (!Array.isArray(prevResults) || prevResults.length <= index || !prevResults[index]) {
+                  return prevResults;
+                }
+                const newResults = [...prevResults];
+                newResults[index].needsYouTubeSearch = false;
+                return newResults;
+              });
               setYoutubeLoading(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(`main-${index}`);
@@ -208,18 +244,36 @@ export default function SampleFinderApp() {
             .then(sampleYoutubeData => {
               // Update results immediately when this completes
               setResults(prevResults => {
-                const newResults = [...prevResults];
-                if (newResults[index]?.sampledFrom) {
-                  if (sampleYoutubeData.youtube_url && sampleYoutubeData.confidence > 0.5) {
-                    newResults[index].sampledFrom.youtube = sampleYoutubeData.youtube_url;
-                    newResults[index].sampledFrom.youtubeTitle = sampleYoutubeData.youtube_title;
-                    newResults[index].sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
-                    console.log(`🎥 Sample video loaded for result ${index}:`, sampleYoutubeData.youtube_url);
-                  } else {
-                    console.log(`❌ Sample video not found for result ${index} (confidence: ${sampleYoutubeData.confidence})`);
-                  }
-                  newResults[index].sampledFrom.needsYouTubeSearch = false;
+                // Validate that prevResults is an array and has the expected structure
+                if (!Array.isArray(prevResults) || prevResults.length <= index) {
+                  console.warn(`⚠️ Results array invalid or index ${index} out of bounds for sample:`, prevResults);
+                  return prevResults;
                 }
+                
+                const newResults = [...prevResults];
+                const currentResult = newResults[index];
+                
+                // Validate the current result object and its sampledFrom property
+                if (!currentResult || typeof currentResult !== 'object' || !currentResult.title) {
+                  console.warn(`⚠️ Invalid result object at index ${index} for sample:`, currentResult);
+                  return prevResults; // Return unchanged if invalid
+                }
+                
+                if (!currentResult.sampledFrom || typeof currentResult.sampledFrom !== 'object') {
+                  console.warn(`⚠️ Invalid sampledFrom object at index ${index}:`, currentResult.sampledFrom);
+                  return prevResults; // Return unchanged if invalid
+                }
+                
+                if (sampleYoutubeData.youtube_url && sampleYoutubeData.confidence > 0.5) {
+                  newResults[index].sampledFrom.youtube = sampleYoutubeData.youtube_url;
+                  newResults[index].sampledFrom.youtubeTitle = sampleYoutubeData.youtube_title;
+                  newResults[index].sampledFrom.youtubeConfidence = sampleYoutubeData.confidence;
+                  console.log(`🎥 Sample video loaded for result ${index}:`, sampleYoutubeData.youtube_url);
+                } else {
+                  console.log(`❌ Sample video not found for result ${index} (confidence: ${sampleYoutubeData.confidence})`);
+                }
+                newResults[index].sampledFrom.needsYouTubeSearch = false;
+                
                 return newResults;
               });
               
@@ -232,6 +286,15 @@ export default function SampleFinderApp() {
             })
             .catch(error => {
               console.error('❌ Failed to fetch YouTube URL for sample:', error);
+              // Still need to clear loading state and mark as not needing search
+              setResults(prevResults => {
+                if (!Array.isArray(prevResults) || prevResults.length <= index || !prevResults[index]?.sampledFrom) {
+                  return prevResults;
+                }
+                const newResults = [...prevResults];
+                newResults[index].sampledFrom.needsYouTubeSearch = false;
+                return newResults;
+              });
               setYoutubeLoading(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(`sample-${index}`);
@@ -1367,14 +1430,20 @@ export default function SampleFinderApp() {
                             </div>
                           )}
 
-        {results.filter(item => 
-          item && 
-          typeof item === 'object' && 
-          typeof item.title === 'string' && 
-          item.title.trim().length > 0 &&
-          typeof item.artist === 'string' && 
-          item.artist.trim().length > 0
-        ).map((item, i) => (
+        {results.filter((item, originalIndex) => {
+          const isValid = item && 
+            typeof item === 'object' && 
+            typeof item.title === 'string' && 
+            item.title.trim().length > 0 &&
+            typeof item.artist === 'string' && 
+            item.artist.trim().length > 0;
+          
+          if (!isValid) {
+            console.warn(`⚠️ Filtering out invalid result at index ${originalIndex}:`, item);
+          }
+          
+          return isValid;
+        }).map((item, i) => (
                         <div
                           key={i}
                           className={`${i > 0 ? 'pt-12 mt-12' : 'pt-8 mt-8'}`}
