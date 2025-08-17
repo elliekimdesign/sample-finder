@@ -1454,10 +1454,10 @@ export default function SamplefindrApp() {
                           {/* Simple Track Header */}
                           <div className="mb-12">
               <div className="flex items-center gap-3 mb-2">
-                              <h1 className={`text-2xl md:text-3xl font-bold text-white ${((spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title).toLowerCase().includes('why i love you') ? 'font-libreCaslon' : 'font-notoSerif'}`}>
-                                {(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}
+                              <h1 className={`text-2xl md:text-3xl font-bold text-white ${((spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title || '').toLowerCase().includes('why i love you') ? 'font-libreCaslon' : 'font-notoSerif'}`}>
+                                {(spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title}
                               </h1>
-                              {item.isApiResult && (
+                              {item?.isApiResult && (
                                 <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border border-blue-500/30 rounded-full">
                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1467,21 +1467,21 @@ export default function SamplefindrApp() {
                               )}
                             </div>
                             <p className="text-lg text-white/70">
-                              by {safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}
+                              by {safeJoinArtists(spotifyInfo[`${item?.title}|${item?.artist}`]?.artists) || item?.artist}
                             </p>
-                            {item.sampledFrom && item.sampledFrom.title && item.sampledFrom.artist && (
+                            {item?.sampledFrom && item?.sampledFrom?.title && item?.sampledFrom?.artist && (
                               <p className="text-sm text-white/50 mt-2">
-                                Samples "{item.sampledFrom.title}" by {item.sampledFrom.artist}
-                                {item.sampledFrom.note && (
+                                Samples "{item?.sampledFrom?.title}" by {item?.sampledFrom?.artist}
+                                {item?.sampledFrom?.note && (
                                   <span className="block text-xs text-white/40 mt-1">
-                                    {item.sampledFrom.note}
+                                    {item?.sampledFrom?.note}
                                   </span>
                                 )}
                               </p>
                             )}
-                            {item.apiNote && !item.sampledFrom && (
+                            {item?.apiNote && !item?.sampledFrom && (
                               <p className="text-sm text-white/40 mt-2 italic">
-                                {item.apiNote}
+                                {item?.apiNote}
                               </p>
                             )}
                           </div>
@@ -1508,18 +1508,18 @@ export default function SamplefindrApp() {
                                 {/* Album Art */}
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'sampled',
-                                  title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
-                                  artist: safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist,
-                                  year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
-                                  image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
+                                  title: (spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title,
+                                  artist: safeJoinArtists(spotifyInfo[`${item?.title}|${item?.artist}`]?.artists) || item?.artist,
+                                  year: (spotifyInfo[`${item?.title}|${item?.artist}`]?.year) || item?.year,
+                                  image: (spotifyInfo[`${item?.title}|${item?.artist}`]?.coverUrl) || item?.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                 })}>
                                   <div className="absolute -inset-1 opacity-70" style={{
-                                    background: (() => { const c = dominantColors[`${item.title}|${item.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                    background: (() => { const c = dominantColors[`${item?.title}|${item?.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
                                   }}></div>
                                   <img 
-                                    src={spotifyCovers[`${item.title}|${item.artist}`] || item.thumbnail} 
-                                    alt={`${item.title} album art`}
+                                    src={spotifyCovers[`${item?.title}|${item?.artist}`] || item?.thumbnail} 
+                                    alt={`${item?.title || 'Unknown'} album art`}
                                     className="relative w-full aspect-square object-cover shadow-xl" 
                                   />
           </div>
@@ -1527,20 +1527,20 @@ export default function SamplefindrApp() {
                                 {/* Song Info */}
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
                                   type: 'sampled',
-                                  title: (spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title,
-                                  artist: safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist,
-                                  year: (spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year,
-                                  image: (spotifyInfo[`${item.title}|${item.artist}`]?.coverUrl) || item.thumbnail,
+                                  title: (spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title,
+                                  artist: safeJoinArtists(spotifyInfo[`${item?.title}|${item?.artist}`]?.artists) || item?.artist,
+                                  year: (spotifyInfo[`${item?.title}|${item?.artist}`]?.year) || item?.year,
+                                  image: (spotifyInfo[`${item?.title}|${item?.artist}`]?.coverUrl) || item?.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                 })}>
-                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.title}|${item.artist}`]?.title) || item.title}</h3>
-                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item.title}|${item.artist}`]?.artists) || item.artist}</p>
-                                  <p className="text-sm text-gray-500">{(spotifyInfo[`${item.title}|${item.artist}`]?.year) || item.year}</p>
+                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title}</h3>
+                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item?.title}|${item?.artist}`]?.artists) || item?.artist}</p>
+                                  <p className="text-sm text-gray-500">{(spotifyInfo[`${item?.title}|${item?.artist}`]?.year) || item?.year}</p>
                                   
                                   {/* Genre Tags */}
-                                  {spotifyInfo[`${item.title}|${item.artist}`]?.genres && spotifyInfo[`${item.title}|${item.artist}`].genres.length > 0 && (
+                                  {spotifyInfo[`${item?.title}|${item?.artist}`]?.genres && spotifyInfo[`${item?.title}|${item?.artist}`].genres.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-3">
-                                      {spotifyInfo[`${item.title}|${item.artist}`].genres.slice(0, 3).map((genre, idx) => (
+                                      {spotifyInfo[`${item?.title}|${item?.artist}`].genres.slice(0, 3).map((genre, idx) => (
                                         <span
                                           key={idx}
                                           className="px-3 py-1 text-[10px] rounded-full bg-white/5 border border-white/10 text-white/60 whitespace-nowrap"
@@ -1571,18 +1571,18 @@ export default function SamplefindrApp() {
                                 {/* Album Art */}
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
-                                  title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
-                                  artist: safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist,
-                                  year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
-                                  image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
+                                  title: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.title) || item?.sampledFrom?.title,
+                                  artist: safeJoinArtists(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.artists) || item?.sampledFrom?.artist,
+                                  year: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.year) || item?.sampledFrom?.year,
+                                  image: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.coverUrl) || item?.sampledFrom?.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                 })}>
                                   <div className="absolute -inset-1 opacity-70" style={{
-                                    background: (() => { const c = dominantColors[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
+                                    background: (() => { const c = dominantColors[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]; return c ? `radial-gradient(60% 60% at 50% 50%, rgba(${c.r},${c.g},${c.b},0.35) 0%, rgba(${c.r},${c.g},${c.b},0.0) 70%)` : 'transparent'; })()
                                   }}></div>
                                   <img 
-                                    src={spotifyCovers[`${item.sampledFrom.title}|${item.sampledFrom.artist}`] || item.sampledFrom.thumbnail} 
-                                    alt={`${item.sampledFrom.title} album art`}
+                                    src={spotifyCovers[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`] || item?.sampledFrom?.thumbnail} 
+                                    alt={`${item?.sampledFrom?.title || 'Unknown'} album art`}
                                     className="relative w-full aspect-square object-cover shadow-xl" 
                                   />
           </div>
@@ -1590,20 +1590,20 @@ export default function SamplefindrApp() {
                                 {/* Song Info */}
                                 <div className="flex-1 cursor-pointer" onClick={() => openPanel({
                                   type: 'source',
-                                  title: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title,
-                                  artist: safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist,
-                                  year: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year,
-                                  image: (spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.coverUrl) || item.sampledFrom.thumbnail,
+                                  title: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.title) || item?.sampledFrom?.title,
+                                  artist: safeJoinArtists(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.artists) || item?.sampledFrom?.artist,
+                                  year: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.year) || item?.sampledFrom?.year,
+                                  image: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.coverUrl) || item?.sampledFrom?.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                 })}>
-                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.title) || item.sampledFrom.title}</h3>
-                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.artists) || item.sampledFrom.artist}</p>
-                                  <p className="text-sm text-gray-500">{(spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.year) || item.sampledFrom.year}</p>
+                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.title) || item?.sampledFrom?.title}</h3>
+                                  <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.artists) || item?.sampledFrom?.artist}</p>
+                                  <p className="text-sm text-gray-500">{(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.year) || item?.sampledFrom?.year}</p>
                                   
                                   {/* Genre Tags */}
-                                  {spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`]?.genres && spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`].genres.length > 0 && (
+                                  {spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.genres && spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`].genres.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-3">
-                                      {spotifyInfo[`${item.sampledFrom.title}|${item.sampledFrom.artist}`].genres.slice(0, 3).map((genre, idx) => (
+                                      {spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`].genres.slice(0, 3).map((genre, idx) => (
                                         <span
                                           key={idx}
                                           className="px-3 py-1 text-[10px] rounded-full bg-white/5 border border-white/10 text-white/60 whitespace-nowrap"
@@ -1633,7 +1633,7 @@ export default function SamplefindrApp() {
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
-                                  {item.youtube ? (
+                                  {item?.youtube ? (
                                     <iframe
                                       width="100%"
                                       height="100%"
@@ -1651,7 +1651,7 @@ export default function SamplefindrApp() {
                                             return { videoId, startTime: null };
                                           }
                                         };
-                                        const { videoId, startTime } = extractVideoId(item.youtube);
+                                        const { videoId, startTime } = extractVideoId(item?.youtube);
                                         return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
                                       })()}
                                       title="YouTube video player"
@@ -1691,7 +1691,7 @@ export default function SamplefindrApp() {
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
-                                  {item.sampledFrom?.youtube ? (
+                                  {item?.sampledFrom?.youtube ? (
                                     <iframe
                                       width="100%"
                                       height="100%"
@@ -1709,7 +1709,7 @@ export default function SamplefindrApp() {
                                             return { videoId, startTime: null };
                                           }
                                         };
-                                        const { videoId, startTime } = extractVideoId(item.sampledFrom.youtube);
+                                        const { videoId, startTime } = extractVideoId(item?.sampledFrom?.youtube);
                                         return `https://www.youtube.com/embed/${videoId}?controls=1${startTime ? `&start=${startTime}` : ''}`;
                                       })()}
                                       title="YouTube video player"
