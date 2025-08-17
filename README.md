@@ -1,4 +1,4 @@
-# Sample Finder
+# samplefindr
 
 An AI-powered music sample detection application that identifies samples in songs and provides YouTube videos for both the original track and the sampled source.
 

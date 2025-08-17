@@ -1,7 +1,7 @@
-import SampleFinderApp from "./SampleFinderApp";
+import SamplefindrApp from "./SamplefindrApp";
 
 function App() {
-  return <SampleFinderApp />;
+  return <SamplefindrApp />;
 }
 
 export default App;
