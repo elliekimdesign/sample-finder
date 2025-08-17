@@ -1012,13 +1012,11 @@ export default function SamplefindrApp() {
                             <span className="inline-block animate-textGlow" style={{ animationDelay: '0.9s' }}>p</span>
                             <span className="inline-block animate-textGlow" style={{ animationDelay: '1.2s' }}>l</span>
                             <span className="inline-block animate-textGlow" style={{ animationDelay: '1.5s' }}>e</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '1.8s' }}> </span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.1s' }}>f</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.4s' }}>i</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.7s' }}>n</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3s' }}>d</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3.3s' }}>e</span>
-                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3.6s' }}>r</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '1.8s' }}>f</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.1s' }}>i</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.4s' }}>n</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '2.7s' }}>d</span>
+                            <span className="inline-block animate-textGlow" style={{ animationDelay: '3s' }}>r</span>
                           </h1>
                           <p className="text-white/60 text-sm font-light mt-4 text-center">
                             Find out who sampled this beat
