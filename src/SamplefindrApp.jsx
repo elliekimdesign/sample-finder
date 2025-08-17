@@ -610,7 +610,6 @@ export default function SamplefindrApp() {
 
   const closePanel = () => setPanelOpen(false);
   
-  // 마우스 위치 추적
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -1237,7 +1236,7 @@ export default function SamplefindrApp() {
                         <div className="absolute bottom-0 h-px bg-gray-600/30 pointer-events-none" style={{ left: 'calc(-50vw + 50%)', right: 'calc(-50vw + 50%)' }}></div>
                         <div className="max-w-7xl mx-auto px-6 py-3 md:py-4 flex items-center gap-6">
                           <button type="button" onClick={goHome} className="font-bitcount text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 tracking-tight lg:tracking-normal leading-[1.35] whitespace-nowrap hover:text-white focus:outline-none flex items-center self-start mt-2">
-                            sample finder
+                            samplefindr
                           </button>
                           <form onSubmit={handleSearch} className="flex-1 max-w-md ml-auto relative group">
                             <div className="flex items-center relative">
@@ -1986,7 +1985,7 @@ export default function SamplefindrApp() {
                             {/* Left: Logo */}
                             <div className="flex-shrink-0">
                               <h1 className="text-white/60 font-bitcount text-2xl tracking-wide leading-tight">
-                                sample finder
+                                samplefindr
                               </h1>
                               <p className="text-white/35 mt-2" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '300', letterSpacing: '0.5px'}}>
                                 Discover who sampled the beat
@@ -2056,7 +2055,7 @@ export default function SamplefindrApp() {
               {/* Left: Logo */}
               <div className="flex-shrink-0">
                 <h1 className="text-white/60 font-bitcount text-2xl tracking-wide leading-tight">
-                  sample finder
+                  samplefindr
                 </h1>
                 <p className="text-white/35 mt-2" style={{fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px', fontWeight: '300', letterSpacing: '0.5px'}}>
                   Discover who sampled the beat
