@@ -1487,11 +1487,9 @@ export default function SamplefindrApp() {
                           </div>
 
                           {/* Album Info */}
-                          <div className={`grid grid-cols-1 ${item?.sampledFrom?.title ? 'xl:grid-cols-2' : ''} gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2`}>
-                            {/* Vertical Divider - only visible on large screens when there's a sample */}
-                            {item?.sampledFrom?.title && (
-                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
-                            )}
+                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2">
+                            {/* Vertical Divider - only visible on large screens */}
+                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             
                             {/* Left Side - Sampled Song */}
                             <div className="space-y-6">
@@ -1557,8 +1555,7 @@ export default function SamplefindrApp() {
                             </div>
 
                             {/* Right Side - Sample Source */}
-                            {item?.sampledFrom?.title && (
-                              <div className="space-y-6">
+                            <div className="space-y-6">
                               {/* Section Header */}
             <div>
                                 <div className="mb-4">
@@ -1569,8 +1566,8 @@ export default function SamplefindrApp() {
               </div>
             </div>
                               
-                              {/* Album Art and Song Info - Side by side */}
-                              <div className="flex items-start gap-4">
+                              {item?.sampledFrom?.title ? (
+                                <div className="flex items-start gap-4">
                                 {/* Album Art */}
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
@@ -1618,16 +1615,24 @@ export default function SamplefindrApp() {
                                   )}
                                 </div>
                               </div>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="flex items-center justify-center h-64">
+                                  <div className="text-center text-white/60">
+                                    <svg className="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0118 12c0-4.418-3.582-8-8-8s-8 3.582-8 8a7.962 7.962 0 012 5.291m1.172 1.172A3.963 3.963 0 016 18c0-1.105.448-2.105 1.172-2.828M18 18c0-1.105-.448-2.105-1.172-2.828" />
+                                    </svg>
+                                    <p className="text-lg font-medium">No sample found</p>
+                                    <p className="text-sm text-white/40 mt-2">This track doesn't contain any known samples</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Video Player Cards */}
-                          <div className={`grid grid-cols-1 ${item?.sampledFrom?.title ? 'xl:grid-cols-2' : ''} gap-8 md:gap-12 xl:gap-16 relative pt-12`}>
-                            {/* Vertical Divider - only visible on large screens when there's a sample */}
-                            {item?.sampledFrom?.title && (
-                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
-                            )}
+                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative pt-12">
+                            {/* Vertical Divider - only visible on large screens */}
+                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group">
@@ -1693,12 +1698,12 @@ export default function SamplefindrApp() {
                             </div>
 
                             {/* Right Side - Sample Source Video */}
-                            {item?.sampledFrom?.title && (
-                              <div className="relative group">
+                            <div className="relative group">
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
-                                  {item?.sampledFrom?.youtube ? (
+                                  {item?.sampledFrom?.title ? (
+                                    item?.sampledFrom?.youtube ? (
                                     <iframe
                                       width="100%"
                                       height="100%"
@@ -1746,11 +1751,20 @@ export default function SamplefindrApp() {
                                         <p className="text-sm">No video available</p>
                                       </div>
                                     </div>
-                                  )}
+                                  )
+                                ) : (
+                                  <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                    <div className="text-center text-white/40">
+                                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                      <p className="text-sm">No sample found</p>
+                                    </div>
+                                  </div>
+                                )}
                                 </div>
                               </div>
-                              </div>
-                            )}
+                            </div>
                           </div>
                         </div>
                       ))}
