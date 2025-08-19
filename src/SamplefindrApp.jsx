@@ -118,11 +118,11 @@ export default function SamplefindrApp() {
        const response = await fetch('/api/home-now?limit=6&samples_only=true');
        if (response.ok) {
          const data = await response.json();
-         // STRICT FILTER: Only tracks with clear "Sampled From" relationships
+         // STRICT FILTER: Only tracks with credited main samples from other songs
          const sampledTracks = (data.tracks || []).filter(track => {
            const hasSample = track.sample_source || track.has_sample || track.verified_sample;
            const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
-           // Don't show tracks without clear sample relationships
+           // EXCLUDE tracks that "do not contain a credited main sample from another song"
            return hasSample && hasValidSampleSource;
          });
          return sampledTracks;
@@ -139,11 +139,11 @@ export default function SamplefindrApp() {
        const response = await fetch('/api/home-discover?limit=6&samples_only=true');
        if (response.ok) {
          const data = await response.json();
-         // STRICT FILTER: Only tracks with clear "Sampled From" relationships
+         // STRICT FILTER: Only tracks with credited main samples from other songs
          const sampledTracks = (data.tracks || []).filter(track => {
            const hasSample = track.sample_source || track.has_sample || track.verified_sample;
            const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
-           // Don't show tracks without clear sample relationships
+           // EXCLUDE tracks that "do not contain a credited main sample from another song"
            return hasSample && hasValidSampleSource;
          });
          return sampledTracks;
@@ -903,8 +903,8 @@ export default function SamplefindrApp() {
     generateDiscoveryTracks(results);
   }, [results, spotifyInfo]);
 
-     // Fallback data for when APIs aren't available - ONLY TRACKS WITH CLEAR VERIFIED SAMPLES
-   // TRENDING: Most-searched tracks with obvious sample relationships (unique artists)
+     // Fallback data for when APIs aren't available - ONLY TRACKS WITH CREDITED MAIN SAMPLES
+   // TRENDING: Most-searched tracks with definitive sample relationships (unique artists)
    const fallbackNowTracks = [
      { 
        id: 'first-class-harlow',
@@ -912,15 +912,7 @@ export default function SamplefindrApp() {
        artist: 'Jack Harlow',
        year: '2022',
        album_art: null,
-       sample_source: 'Fergie - Glamorous' // Clear verified sample - uses the hook
-     },
-     { 
-       id: 'hotline-bling-drake',
-       title: 'Hotline Bling', 
-       artist: 'Drake',
-       year: '2015',
-       album_art: null,
-       sample_source: 'Timmy Thomas - Why Can\'t We Live Together' // Clear verified sample
+       sample_source: 'Fergie - Glamorous' // CREDITED SAMPLE - interpolates the hook
      },
      { 
        id: 'stronger-kanye',
@@ -928,7 +920,7 @@ export default function SamplefindrApp() {
        artist: 'Kanye West',
        year: '2007',
        album_art: null,
-       sample_source: 'Daft Punk - Harder Better Faster Stronger' // Clear verified sample - heavily uses the track
+       sample_source: 'Daft Punk - Harder Better Faster Stronger' // CREDITED SAMPLE - heavily samples the track
      },
      { 
        id: 'she-knows-jcole',
@@ -936,15 +928,7 @@ export default function SamplefindrApp() {
        artist: 'J. Cole',
        year: '2014',
        album_art: null,
-       sample_source: 'Bad Things - Cults' // Clear verified sample - mentioned by user
-     },
-     { 
-       id: 'good-4-u-olivia',
-       title: 'good 4 u', 
-       artist: 'Olivia Rodrigo',
-       year: '2021',
-       album_art: null,
-       sample_source: 'Paramore - Misery Business' // Clear verified sample - melody and structure
+       sample_source: 'Bad Things - Cults' // CREDITED SAMPLE - samples the melody
      },
      { 
        id: 'thank-u-next-ariana',
@@ -952,7 +936,23 @@ export default function SamplefindrApp() {
        artist: 'Ariana Grande',
        year: '2018',
        album_art: null,
-       sample_source: 'Imogen Heap - Hide and Seek' // Clear verified sample - vocal sample
+       sample_source: 'Imogen Heap - Hide and Seek' // CREDITED SAMPLE - vocal manipulation sample
+     },
+     { 
+       id: 'mask-off-future',
+       title: 'Mask Off', 
+       artist: 'Future',
+       year: '2017',
+       album_art: null,
+       sample_source: 'Prison Song - Tommy Butler' // CREDITED SAMPLE - flute melody
+     },
+     { 
+       id: 'mo-money-problems-biggie',
+       title: 'Mo Money Mo Problems', 
+       artist: 'The Notorious B.I.G.',
+       year: '1997',
+       album_art: null,
+       sample_source: 'Diana Ross - I\'m Coming Out' // CREDITED SAMPLE - main hook
      }
    ];
 
@@ -1678,7 +1678,7 @@ export default function SamplefindrApp() {
                             <span className="inline-block animate-textGlow" style={{ animationDelay: '3s' }}>r</span>
                           </h1>
                           <p className="text-white/60 text-sm font-light mt-4 text-center">
-                            Find out who sampled this beat
+                            See who sampled this track and what it sampled
                           </p>
                         </div>
 
