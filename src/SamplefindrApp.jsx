@@ -915,14 +915,6 @@ export default function SamplefindrApp() {
        sample_source: 'Fergie - Glamorous' // Clear verified sample - uses the hook
      },
      { 
-       id: 'about-damn-time-lizzo',
-       title: 'About Damn Time', 
-       artist: 'Lizzo',
-       year: '2022',
-       album_art: null,
-       sample_source: 'Beastie Boys - Hey Ladies' // Clear verified sample
-     },
-     { 
        id: 'hotline-bling-drake',
        title: 'Hotline Bling', 
        artist: 'Drake',
@@ -947,12 +939,20 @@ export default function SamplefindrApp() {
        sample_source: 'Bad Things - Cults' // Clear verified sample - mentioned by user
      },
      { 
-       id: 'industry-baby-lil-nas',
-       title: 'Industry Baby', 
-       artist: 'Lil Nas X ft. Jack Harlow',
+       id: 'good-4-u-olivia',
+       title: 'good 4 u', 
+       artist: 'Olivia Rodrigo',
        year: '2021',
        album_art: null,
-       sample_source: 'ABRA - Roses' // Clear verified sample
+       sample_source: 'Paramore - Misery Business' // Clear verified sample - melody and structure
+     },
+     { 
+       id: 'thank-u-next-ariana',
+       title: 'thank u, next', 
+       artist: 'Ariana Grande',
+       year: '2018',
+       album_art: null,
+       sample_source: 'Imogen Heap - Hide and Seek' // Clear verified sample - vocal sample
      }
    ];
 
