@@ -39,6 +39,7 @@ export default function SamplefindrApp() {
   const [homeDiscoverTracks, setHomeDiscoverTracks] = useState([]);
   const [homeTracksLoading, setHomeTracksLoading] = useState(true);
   const [homeAlbumArt, setHomeAlbumArt] = useState({}); // Store album art for homepage tracks
+  const [noResultsAlbumArt, setNoResultsAlbumArt] = useState({}); // Store album art for no-results discovery tracks
   
   // Sample API integration states
   const [sampleApiLoading, setSampleApiLoading] = useState(false);
@@ -181,6 +182,47 @@ export default function SamplefindrApp() {
     // Update state with new album art
     if (Object.keys(albumArtUpdates).length > 0) {
       setHomeAlbumArt(prev => ({ ...prev, ...albumArtUpdates }));
+    }
+  };
+
+  // Fetch album art for no-results discovery tracks
+  const fetchNoResultsAlbumArt = async () => {
+    const noResultsTracks = [
+      { title: 'Stronger', artist: 'Kanye West' },
+      { title: 'Stan', artist: 'Eminem' },
+      { title: 'One More Time', artist: 'Daft Punk' },
+      { title: 'Juicy', artist: 'The Notorious B.I.G.' },
+      { title: 'California Love', artist: '2Pac' },
+      { title: 'Hung Up', artist: 'Madonna' }
+    ];
+
+    const albumArtUpdates = {};
+    
+    for (const track of noResultsTracks) {
+      const key = `${track.title}|${track.artist}`;
+      
+      // Skip if we already have this album art
+      if (noResultsAlbumArt[key]) continue;
+      
+      try {
+        // Use existing Spotify resolution function
+        const albumArt = await resolveAlbumCover(track.title, track.artist);
+        if (albumArt) {
+          albumArtUpdates[key] = albumArt;
+        }
+        
+        // Add delay to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`Failed to fetch no-results album art for ${track.title} by ${track.artist}:`, error);
+      }
+    }
+    
+    // Update state with new album art
+    if (Object.keys(albumArtUpdates).length > 0) {
+      setNoResultsAlbumArt(prev => ({ ...prev, ...albumArtUpdates }));
+      // Also update the main spotifyCovers state so it's available everywhere
+      setSpotifyCovers(prev => ({ ...prev, ...albumArtUpdates }));
     }
   };
 
@@ -1005,6 +1047,14 @@ export default function SamplefindrApp() {
        year: '2003',
        album_art: null,
        sample_source: 'The Chi-Lites - Are You My Woman' // Clear verified sample - horn sample
+     },
+     { 
+       id: 'sos-rihanna',
+       title: 'SOS', 
+       artist: 'Rihanna',
+       year: '2006',
+       album_art: null,
+       sample_source: 'Soft Cell - Tainted Love' // Clear verified sample - main hook
      }
    ];
 
@@ -1068,6 +1118,9 @@ export default function SamplefindrApp() {
         if (allTracks.length > 0) {
           fetchHomeAlbumArt(allTracks);
         }
+
+        // Also fetch album art for no-results discovery tracks
+        fetchNoResultsAlbumArt();
         
         // Log impression for the default view (trending)
         if (finalNowTracks.length > 0) {
@@ -1342,20 +1395,20 @@ export default function SamplefindrApp() {
         } else {
           // No curated results, fall back to API only
           console.log('🤖 No curated results found, using API search...');
-          const apiResponse = await fetchSampleIdentification(searchTerm);
-          const convertedResults = convertApiResponseToLocalFormat(apiResponse);
+        const apiResponse = await fetchSampleIdentification(searchTerm);
+        const convertedResults = convertApiResponseToLocalFormat(apiResponse);
+        
+        if (Array.isArray(convertedResults) && convertedResults.length > 0) {
+          const validResults = convertedResults.filter(item => 
+            item && 
+            typeof item === 'object' && 
+            typeof item.title === 'string' && 
+            item.title.trim().length > 0 &&
+            typeof item.artist === 'string' && 
+            item.artist.trim().length > 0
+          );
           
-          if (Array.isArray(convertedResults) && convertedResults.length > 0) {
-            const validResults = convertedResults.filter(item => 
-              item && 
-              typeof item === 'object' && 
-              typeof item.title === 'string' && 
-              item.title.trim().length > 0 &&
-              typeof item.artist === 'string' && 
-              item.artist.trim().length > 0
-            );
-            
-            if (validResults.length > 0) {
+          if (validResults.length > 0) {
               // Ensure all API results have YouTube search flags if needed
               validResults.forEach(result => {
                 if (!result.youtube && result.title && result.artist) {
@@ -1381,12 +1434,12 @@ export default function SamplefindrApp() {
               
               console.log('🎥 Fetching YouTube URLs...');
               await enhanceResultsWithYouTube(sortedResults);
-            } else {
-              console.log('❌ Sample API returned no valid results after filtering');
-              setResults([]);
-            }
           } else {
-            console.log('❌ Sample API returned no results');
+            console.log('❌ Sample API returned no valid results after filtering');
+              setResults([]);
+          }
+        } else {
+          console.log('❌ Sample API returned no results');
             setResults([]);
           }
         }
@@ -1735,8 +1788,8 @@ export default function SamplefindrApp() {
                                {/* Segmented Control */}
                                <div className="flex flex-col items-center justify-center">
                                  <div className="flex items-center gap-1 mb-2">
-                                   <button
-                                     type="button"
+                            <button 
+                              type="button"
                                      onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
@@ -1777,9 +1830,9 @@ export default function SamplefindrApp() {
                                      }`}
                                    >
                                      Discover
-                                   </button>
-                                 </div>
-                                 
+                            </button>
+                          </div>
+
                                  {/* Explanation Text */}
                                  <div className="text-center min-h-[20px]">
                                    <p className="text-white/40 text-xs transition-all duration-200">
@@ -1787,9 +1840,9 @@ export default function SamplefindrApp() {
                                    </p>
                                  </div>
                                </div>
-                             </div>
-                             
-                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
                                {homeTracksLoading ? (
                                  // Loading state
                                  Array.from({ length: 6 }).map((_, idx) => (
@@ -1818,8 +1871,8 @@ export default function SamplefindrApp() {
                                       opacity: 0,
                                       transform: 'translateY(40px)'
                                     }}
-                                     onClick={(e) => {
-                                       e.stopPropagation();
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                        
                                        // Log analytics
                                        logRowCardClick(homeView, track.id || track.title, idx);
@@ -1841,25 +1894,25 @@ export default function SamplefindrApp() {
                                        
                                        // Update query state and navigate
                                        setQuery(query);
-                                       setTimeout(() => {
-                                         const fakeEvent = { preventDefault: () => {} };
+                                      setTimeout(() => {
+                                        const fakeEvent = { preventDefault: () => {} };
                                          handleSearchWithTerm(query, fakeEvent);
-                                       }, 100);
-                                     }}
-                                   >
-                                     <div 
-                                       className="w-32 md:w-36 aspect-square bg-white/5 overflow-hidden mb-3 relative transition-all duration-500 shadow-2xl hover:shadow-4xl"
-                                       style={{
-                                         transform: 'perspective(800px) rotateX(2deg) rotateY(-4deg)',
-                                         transformStyle: 'preserve-3d'
-                                       }}
-                                       onMouseEnter={(e) => {
-                                         e.currentTarget.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(20px) scale(1.1)';
-                                       }}
-                                       onMouseLeave={(e) => {
-                                         e.currentTarget.style.transform = 'perspective(800px) rotateX(2deg) rotateY(-4deg)';
-                                       }}
-                                     >
+                                      }, 100);
+                                    }}
+                                  >
+                                    <div 
+                                      className="w-32 md:w-36 aspect-square bg-white/5 overflow-hidden mb-3 relative transition-all duration-500 shadow-2xl hover:shadow-4xl"
+                                      style={{
+                                        transform: 'perspective(800px) rotateX(2deg) rotateY(-4deg)',
+                                        transformStyle: 'preserve-3d'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(20px) scale(1.1)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'perspective(800px) rotateX(2deg) rotateY(-4deg)';
+                                      }}
+                                    >
                                        {(() => {
                                          const albumArtKey = `${track.title}|${track.artist}`;
                                          const albumArt = track.album_art || homeAlbumArt[albumArtKey];
@@ -1917,23 +1970,23 @@ export default function SamplefindrApp() {
                                            })()
                                          }}
                                        >
-                                         <div className="text-white/60 text-center">
-                                           <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="text-white/60 text-center">
+                                          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                           </svg>
-                                         </div>
-                                       </div>
+                                          </svg>
+                                        </div>
+                                      </div>
                                        
 
-                                     </div>
-                                     <div className="text-center">
-                                       <h4 className="text-white text-xs font-medium mb-1 line-clamp-2 leading-tight">
+                                    </div>
+                                    <div className="text-center">
+                                      <h4 className="text-white text-xs font-medium mb-1 line-clamp-2 leading-tight">
                                          {track.title}
-                                       </h4>
-                                       <p className="text-white/60 text-xs line-clamp-1">
+                                      </h4>
+                                      <p className="text-white/60 text-xs line-clamp-1">
                                          {track.artist}
-                                       </p>
-                                     </div>
+                                      </p>
+                                    </div>
                                   </div>
                                 );
                               })
@@ -2144,23 +2197,119 @@ export default function SamplefindrApp() {
                             </div>
                           </div>
 
-                          {/* Discover Section */}
+                          {/* Discover Section - Popular Sampled Tracks */}
                           <div className="mb-8">
                             <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-xl font-bold text-white">
-                                Discover more sampled tracks
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                              <h4 className="text-white/85 text-lg font-semibold">
+                                Popular sampled tracks you might like
+                              </h4>
+                              <span className="text-white/30 text-xs ml-1">
+                                AI Powered Discovery
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                              {[
+                                { title: 'Stronger', artist: 'Kanye West', genre: 'hip hop' },
+                                { title: 'Stan', artist: 'Eminem', genre: 'rap' },
+                                { title: 'One More Time', artist: 'Daft Punk', genre: 'electronic' },
+                                { title: 'Juicy', artist: 'The Notorious B.I.G.', genre: 'hip hop' },
+                                { title: 'California Love', artist: '2Pac', genre: 'rap' },
+                                { title: 'Hung Up', artist: 'Madonna', genre: 'pop' }
+                              ].map((track, idx) => (
+                                <div 
+                                  key={idx} 
+                                  className="cursor-pointer select-none group transition-transform duration-200 hover:scale-[1.02]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setQuery(`${track.title} ${track.artist}`);
+                                    setTimeout(() => {
+                                      const fakeEvent = { preventDefault: () => {} };
+                                      handleSearchWithTerm(`${track.title} ${track.artist}`, fakeEvent);
+                                    }, 100);
+                                  }}
+                                >
+                                  <div className="w-[92%] aspect-square bg-white/5 overflow-hidden mb-4 relative mx-auto transition-all duration-200 group-hover:shadow-lg group-hover:shadow-white/5">
+                                    {(() => {
+                                      const albumArtKey = `${track.title}|${track.artist}`;
+                                      const albumArt = noResultsAlbumArt[albumArtKey] || spotifyCovers[albumArtKey];
+                                      
+                                      return albumArt ? (
+                                        // Show actual album art if available
+                                        <img 
+                                          src={albumArt} 
+                                          alt={`${track.title} by ${track.artist}`}
+                                          className="w-full h-full object-cover opacity-0 transition-opacity duration-300"
+                                          onLoad={(e) => {
+                                            e.target.style.opacity = '1';
+                                            const loadingDiv = e.target.nextElementSibling;
+                                            if (loadingDiv && loadingDiv.classList.contains('loading-placeholder')) {
+                                              loadingDiv.style.display = 'none';
+                                            }
+                                          }}
+                                          onError={(e) => {
+                                            // Fallback to gradient placeholder on error
+                                            e.target.style.display = 'none';
+                                            const loadingDiv = e.target.nextElementSibling;
+                                            if (loadingDiv && loadingDiv.classList.contains('loading-placeholder')) {
+                                              loadingDiv.style.display = 'none';
+                                            }
+                                            const gradientDiv = loadingDiv ? loadingDiv.nextElementSibling : null;
+                                            if (gradientDiv) gradientDiv.style.display = 'flex';
+                                          }}
+                                        />
+                                      ) : null;
+                                    })()}
+                                    
+                                    {/* Loading placeholder for album art */}
+                                    {(() => {
+                                      const albumArtKey = `${track.title}|${track.artist}`;
+                                      const albumArt = noResultsAlbumArt[albumArtKey] || spotifyCovers[albumArtKey];
+                                      
+                                      return !albumArt ? (
+                                        <div className="loading-placeholder absolute inset-0 bg-white/5 flex items-center justify-center">
+                                          <div className="animate-pulse flex flex-col items-center">
+                                            <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-1"></div>
+                                            <div className="text-xs text-white/40">Loading...</div>
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                    
+                                    {/* Gradient placeholder (fallback when no album art available) */}
+                                    <div 
+                                      className="w-full h-full bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-orange-500/20 flex items-center justify-center"
+                                      style={{ 
+                                        display: (() => {
+                                          const albumArtKey = `${track.title}|${track.artist}`;
+                                          const albumArt = noResultsAlbumArt[albumArtKey] || spotifyCovers[albumArtKey];
+                                          return albumArt ? 'none' : 'flex';
+                                        })()
+                                      }}
+                                    >
+                                      <div className="text-white/60 text-center">
+                                        <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                                 </svg>
-                                <span className="text-white/30 text-xs">scroll</span>
                               </div>
                             </div>
-                            <div className="text-center py-8">
-                              <p className="text-white/60 text-sm">
-                                All sample discovery is now powered by AI. Search for any song above!
-                              </p>
+                                    
+                                    {/* Overlay with genre tag */}
+                                    <div className="absolute top-2 left-2">
+                                      <span className="px-2 py-1 text-[10px] rounded-full bg-black/60 text-white/80 backdrop-blur-sm">
+                                        {track.genre.charAt(0).toUpperCase() + track.genre.slice(1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="w-[92%] mx-auto">
+                                    <h3 className="text-white text-base font-semibold mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
+                                      {track.title}
+                                    </h3>
+                                    <p className="text-white/70 text-xs line-clamp-1 transition-colors duration-200 group-hover:text-white/80">
+                                      {track.artist}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -2186,20 +2335,20 @@ export default function SamplefindrApp() {
         {(Array.isArray(results) ? results : [])
           .filter((item, originalIndex) => {
             // More robust validation to prevent undefined errors
-            const isValid = item && 
-              typeof item === 'object' && 
+          const isValid = item && 
+            typeof item === 'object' && 
               item.title &&
-              typeof item.title === 'string' && 
-              item.title.trim().length > 0 &&
+            typeof item.title === 'string' && 
+            item.title.trim().length > 0 &&
               item.artist &&
-              typeof item.artist === 'string' && 
-              item.artist.trim().length > 0;
-            
-            if (!isValid) {
-              console.warn(`⚠️ Filtering out invalid result at index ${originalIndex}:`, item);
-            }
-            
-            return isValid;
+            typeof item.artist === 'string' && 
+            item.artist.trim().length > 0;
+          
+          if (!isValid) {
+            console.warn(`⚠️ Filtering out invalid result at index ${originalIndex}:`, item);
+          }
+          
+          return isValid;
           })
           .filter(item => item != null) // Additional safety filter to remove any null/undefined items
           .map((item, i) => (
@@ -2253,11 +2402,11 @@ export default function SamplefindrApp() {
                               <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2 z-10"></div>
                             )}
 
-                            {/* Album Info */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2">
+                          {/* Album Info */}
+                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative mb-6 -mt-2">
                             {/* Vertical Divider - only visible when there's a sample */}
                             {item?.sampledFrom?.title && (
-                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             )}
                             
                             {/* Left Side - Sampled Song */}
@@ -2358,7 +2507,7 @@ export default function SamplefindrApp() {
             </div>
                               
                               {item?.sampledFrom?.title ? (
-                                <div className="flex items-start gap-4">
+                              <div className="flex items-start gap-4">
                                 {/* Album Art */}
                                 <div className="relative w-[11.5rem] flex-shrink-0 cursor-pointer transition-transform duration-300 hover:scale-[1.03]" onClick={() => openPanel({
                                   type: 'source',
@@ -2445,7 +2594,7 @@ export default function SamplefindrApp() {
                           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12 xl:gap-16 relative pt-12">
                             {/* Vertical Divider - only visible when there's a sample */}
                             {item?.sampledFrom?.title && (
-                              <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
+                            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-white/5 to-transparent transform -translate-x-1/2"></div>
                             )}
                             
                             {/* Left Side - Sampled Song Video */}
@@ -2513,7 +2662,7 @@ export default function SamplefindrApp() {
 
                             {/* Right Side - Sampled From Video */}
                             {item?.sampledFrom?.title ? (
-                              <div className="relative group">
+                            <div className="relative group">
                               <div className="pointer-events-none absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:'radial-gradient(60% 60% at 50% 50%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.00) 70%)'}}></div>
                               <div className="rounded-xl overflow-hidden shadow-[0_16px_40px_-24px_rgba(0,0,0,0.55)] transition-all duration-400 group-hover:shadow-[0_30px_70px_-24px_rgba(0,0,0,0.75)] scale-[0.95] md:scale-[0.95] group-hover:scale-100 opacity-75 group-hover:opacity-100">
                                 <div className="aspect-video">
@@ -2571,12 +2720,12 @@ export default function SamplefindrApp() {
                                   <div className="w-full h-full bg-white/5 flex items-center justify-center">
                                     <div className="text-center text-white/40">
                                       <p className="text-sm">No sample found</p>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
                                 </div>
                               </div>
-                              </div>
+                            </div>
                             ) : (
                               <div></div>
                             )}
@@ -2618,9 +2767,9 @@ export default function SamplefindrApp() {
                                   return "Other sampled tracks you might like";
                                 })()}
                               </h4>
-                              <span className="text-white/30 text-xs ml-1">
-                                AI Powered Discovery
-                              </span>
+                                <span className="text-white/30 text-xs ml-1">
+                                  AI Powered Discovery
+                                </span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                             {discoveryTracks.map((track, idx) => (
@@ -2649,7 +2798,7 @@ export default function SamplefindrApp() {
                                     <span className="px-2 py-1 text-[10px] rounded-full bg-black/60 text-white/80 backdrop-blur-sm">
                                       {track.genre.charAt(0).toUpperCase() + track.genre.slice(1)}
                                     </span>
-                                  </div>
+                                </div>
                                   {/* Loading overlay while fetching Spotify data */}
                                   {!spotifyCovers[`${track.title}|${track.artist}`] && (
                                     <div className="absolute inset-0 bg-white/5 flex items-center justify-center">
@@ -2661,13 +2810,13 @@ export default function SamplefindrApp() {
                                   )}
                                 </div>
                                 <div className="w-[92%] mx-auto">
-                                  <h3 className="text-white text-base font-semibold mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
+                                <h3 className="text-white text-base font-semibold mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
                                     {spotifyInfo[`${track.title}|${track.artist}`]?.title || track.title}
-                                  </h3>
-                                  <p className="text-white/70 text-xs line-clamp-1 transition-colors duration-200 group-hover:text-white/80">
+                                </h3>
+                                <p className="text-white/70 text-xs line-clamp-1 transition-colors duration-200 group-hover:text-white/80">
                                     {spotifyInfo[`${track.title}|${track.artist}`]?.artists?.[0] || track.artist}
-                                  </p>
-                                </div>
+                                </p>
+                              </div>
                               </div>
                             ))}
                             </div>
