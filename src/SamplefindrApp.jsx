@@ -897,108 +897,110 @@ export default function SamplefindrApp() {
     generateDiscoveryTracks(results);
   }, [results, spotifyInfo]);
 
-  // Fallback data for when APIs aren't available - ONLY SAMPLED TRACKS
-  const fallbackNowTracks = [
-    { 
-      id: 'first-class-harlow',
-      title: 'First Class', 
-      artist: 'Jack Harlow',
-      year: '2022',
-      album_art: null,
-      sample_source: 'Fergie - Glamorous' // Verified sample
-    },
-    { 
-      id: 'about-damn-time-lizzo',
-      title: 'About Damn Time', 
-      artist: 'Lizzo',
-      year: '2022',
-      album_art: null,
-      sample_source: 'Beastie Boys - Hey Ladies' // Verified sample
-    },
-    { 
-      id: 'break-my-soul-beyonce',
-      title: 'Break My Soul', 
-      artist: 'Beyoncé',
-      year: '2022',
-      album_art: null,
-      sample_source: 'Big Freedia - Explode' // Verified sample
-    },
-    { 
-      id: 'hotline-bling-drake',
-      title: 'Hotline Bling', 
-      artist: 'Drake',
-      year: '2015',
-      album_art: null,
-      sample_source: 'Timmy Thomas - Why Can\'t We Live Together' // Verified sample
-    },
-    { 
-      id: 'cant-tell-me-nothing-kanye',
-      title: 'Can\'t Tell Me Nothing', 
-      artist: 'Kanye West',
-      year: '2007',
-      album_art: null,
-      sample_source: 'Connie Mitchell - Connie' // Verified sample
-    },
-    { 
-      id: 'stronger-kanye',
-      title: 'Stronger', 
-      artist: 'Kanye West',
-      year: '2007',
-      album_art: null,
-      sample_source: 'Daft Punk - Harder Better Faster Stronger' // Verified sample
-    }
-  ];
+     // Fallback data for when APIs aren't available - ONLY SAMPLED TRACKS
+   // TRENDING: Recent mainstream hits with verified samples (unique artists)
+   const fallbackNowTracks = [
+     { 
+       id: 'first-class-harlow',
+       title: 'First Class', 
+       artist: 'Jack Harlow',
+       year: '2022',
+       album_art: null,
+       sample_source: 'Fergie - Glamorous' // Verified sample
+     },
+     { 
+       id: 'about-damn-time-lizzo',
+       title: 'About Damn Time', 
+       artist: 'Lizzo',
+       year: '2022',
+       album_art: null,
+       sample_source: 'Beastie Boys - Hey Ladies' // Verified sample
+     },
+     { 
+       id: 'break-my-soul-beyonce',
+       title: 'Break My Soul', 
+       artist: 'Beyoncé',
+       year: '2022',
+       album_art: null,
+       sample_source: 'Big Freedia - Explode' // Verified sample
+     },
+     { 
+       id: 'hotline-bling-drake',
+       title: 'Hotline Bling', 
+       artist: 'Drake',
+       year: '2015',
+       album_art: null,
+       sample_source: 'Timmy Thomas - Why Can\'t We Live Together' // Verified sample
+     },
+     { 
+       id: 'stronger-kanye',
+       title: 'Stronger', 
+       artist: 'Kanye West',
+       year: '2007',
+       album_art: null,
+       sample_source: 'Daft Punk - Harder Better Faster Stronger' // Verified sample
+     },
+     { 
+       id: 'crazy-in-love-beyonce2',
+       title: 'Crazy in Love', 
+       artist: 'Beyoncé ft. Jay-Z',
+       year: '2003',
+       album_art: null,
+       sample_source: 'The Chi-Lites - Are You My Woman' // Verified sample
+     }
+   ];
 
-  const fallbackDiscoverTracks = [
-    { 
-      id: 'flashing-lights-kanye',
-      title: 'Flashing Lights', 
-      artist: 'Kanye West',
-      year: '2007',
-      album_art: null,
-      sample_source: 'Connie Mitchell - Connie' // Verified sample
-    },
-    { 
-      id: 'stan-eminem',
-      title: 'Stan', 
-      artist: 'Eminem',
-      year: '2000',
-      album_art: null,
-      sample_source: 'Dido - Thank You' // Verified sample
-    },
-    { 
-      id: 'california-love-2pac',
-      title: 'California Love', 
-      artist: '2Pac',
-      year: '1995',
-      album_art: null,
-      sample_source: 'Joe Cocker - Woman to Woman' // Verified sample
-    },
-    { 
-      id: 'through-the-wire-kanye',
-      title: 'Through the Wire', 
-      artist: 'Kanye West',
-      year: '2003',
-      album_art: null,
-      sample_source: 'Chaka Khan - Through the Fire' // Verified sample
-    },
-    { 
-      id: 'power-kanye',
-      title: 'Power', 
-      artist: 'Kanye West',
-      year: '2010',
-      album_art: null,
-      sample_source: '21st Century Schizoid Man - King Crimson' // Verified sample
-    },
-    { 
-      id: 'gold-digger-kanye',
-      title: 'Gold Digger', 
-      artist: 'Kanye West ft. Jamie Foxx',
-      year: '2005',
-      album_art: null,
-      sample_source: 'Ray Charles - I Got a Woman' // Verified sample
-    }
-  ];
+   // DISCOVER: Classic sampled tracks with different artists (no overlap with Trending)
+   const fallbackDiscoverTracks = [
+     { 
+       id: 'stan-eminem',
+       title: 'Stan', 
+       artist: 'Eminem',
+       year: '2000',
+       album_art: null,
+       sample_source: 'Dido - Thank You' // Verified sample
+     },
+     { 
+       id: 'california-love-2pac',
+       title: 'California Love', 
+       artist: '2Pac',
+       year: '1995',
+       album_art: null,
+       sample_source: 'Joe Cocker - Woman to Woman' // Verified sample
+     },
+     { 
+       id: 'juicy-biggie',
+       title: 'Juicy', 
+       artist: 'The Notorious B.I.G.',
+       year: '1994',
+       album_art: null,
+       sample_source: 'Mtume - Juicy Fruit' // Verified sample
+     },
+     { 
+       id: 'hung-up-madonna',
+       title: 'Hung Up', 
+       artist: 'Madonna',
+       year: '2005',
+       album_art: null,
+       sample_source: 'ABBA - Gimme! Gimme! Gimme!' // Verified sample
+     },
+     { 
+       id: 'one-more-time-daft-punk',
+       title: 'One More Time', 
+       artist: 'Daft Punk',
+       year: '2000',
+       album_art: null,
+       sample_source: 'Eddie Johns - More Spell on You' // Verified sample
+     },
+     { 
+       id: 'sos-rihanna',
+       title: 'SOS', 
+       artist: 'Rihanna',
+       year: '2006',
+       album_art: null,
+       sample_source: 'Soft Cell - Tainted Love' // Verified sample
+     }
+   ];
 
   // Fetch homepage tracks on mount
   useEffect(() => {
@@ -1011,17 +1013,40 @@ export default function SamplefindrApp() {
           fetchHomeDiscoverTracks()
         ]);
         
-        // Use API data if available, otherwise fallback
-        let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
-        let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
-        
-        // CRITICAL: Filter to ensure ONLY tracks with samples are shown
-        finalNowTracks = finalNowTracks.filter(track => 
-          track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
-        );
-        finalDiscoverTracks = finalDiscoverTracks.filter(track => 
-          track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
-        );
+                 // Use API data if available, otherwise fallback
+         let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
+         let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
+         
+         // CRITICAL: Filter to ensure ONLY tracks with samples are shown
+         finalNowTracks = finalNowTracks.filter(track => 
+           track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
+         );
+         finalDiscoverTracks = finalDiscoverTracks.filter(track => 
+           track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
+         );
+         
+         // ENSURE UNIQUE ARTISTS across both Trending and Discover sections
+         const usedArtists = new Set();
+         
+         // First, process Trending tracks and mark artists as used
+         finalNowTracks = finalNowTracks.filter(track => {
+           const artistKey = track.artist.toLowerCase();
+           if (usedArtists.has(artistKey)) {
+             return false; // Skip duplicate artist
+           }
+           usedArtists.add(artistKey);
+           return true;
+         });
+         
+         // Then, process Discover tracks and skip artists already used in Trending
+         finalDiscoverTracks = finalDiscoverTracks.filter(track => {
+           const artistKey = track.artist.toLowerCase();
+           if (usedArtists.has(artistKey)) {
+             return false; // Skip duplicate artist
+           }
+           usedArtists.add(artistKey);
+           return true;
+         });
         
         setHomeNowTracks(finalNowTracks);
         setHomeDiscoverTracks(finalDiscoverTracks);
