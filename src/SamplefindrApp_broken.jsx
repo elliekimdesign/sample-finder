@@ -745,109 +745,96 @@ export default function SamplefindrApp() {
     };
   }, [results, apiBase]);
 
-     // Generate discovery tracks based on current search results' genres
-   const generateDiscoveryTracks = (currentResults) => {
-     if (!currentResults || currentResults.length === 0) {
-       setDiscoveryTracks([]);
-       return;
-     }
+  // Generate discovery tracks based on current search results' genres
+  const generateDiscoveryTracks = (currentResults) => {
+    if (!currentResults || currentResults.length === 0) {
+      setDiscoveryTracks([]);
+      return;
+    }
 
-     // Get genres from current search results
-     const currentGenres = new Set();
-     currentResults.forEach(item => {
-       const key = `${item?.title}|${item?.artist}`;
-       const genres = spotifyInfo[key]?.genres || [];
-       genres.forEach(genre => {
-         const normalizedGenre = genre.toLowerCase();
-         currentGenres.add(normalizedGenre);
-       });
-     });
+    // Get genres from current search results
+    const currentGenres = new Set();
+    currentResults.forEach(item => {
+      const key = `${item?.title}|${item?.artist}`;
+      const genres = spotifyInfo[key]?.genres || [];
+      genres.forEach(genre => {
+        const normalizedGenre = genre.toLowerCase();
+        currentGenres.add(normalizedGenre);
+      });
+    });
 
-     // If no genres found, use fallback genres
-     if (currentGenres.size === 0) {
-       currentGenres.add('hip hop');
-       currentGenres.add('rap');
-     }
+    // If no genres found, use fallback genres
+    if (currentGenres.size === 0) {
+      currentGenres.add('hip hop');
+      currentGenres.add('rap');
+    }
 
-     // Find matching tracks from our database
-     const discoveryTracks = [];
-     const usedTracks = new Set();
-     const usedArtists = new Set(); // Track used artists to ensure uniqueness
+    // Find matching tracks from our database
+    const discoveryTracks = [];
+    const usedTracks = new Set();
 
-     // Add current search results to avoid duplicates (both tracks and artists)
-     currentResults.forEach(item => {
-       if (item?.title && item?.artist) {
-         usedTracks.add(`${item.title.toLowerCase()}|${item.artist.toLowerCase()}`);
-         usedArtists.add(item.artist.toLowerCase());
-       }
-     });
+    // Add current search results to avoid duplicates
+    currentResults.forEach(item => {
+      if (item?.title && item?.artist) {
+        usedTracks.add(`${item.title.toLowerCase()}|${item.artist.toLowerCase()}`);
+      }
+    });
 
-     // Get tracks from matching genres and sort by priority/popularity
-     // ONLY include tracks that have confirmed samples
-     const genreMatches = [];
-     Array.from(currentGenres).forEach(genre => {
-       const genreTracks = sampledTracksDatabase[genre] || [];
-       genreTracks.forEach(track => {
-         const trackKey = `${track.title.toLowerCase()}|${track.artist.toLowerCase()}`;
-         const artistKey = track.artist.toLowerCase();
-         // Only include tracks that have confirmed samples AND unique artists
-         if (!usedTracks.has(trackKey) && !usedArtists.has(artistKey) && track.hasSample) {
-           genreMatches.push(track);
-           usedTracks.add(trackKey);
-           usedArtists.add(artistKey);
-         }
-       });
-     });
+    // Get tracks from matching genres and sort by priority/popularity
+    // ONLY include tracks that have confirmed samples
+    const genreMatches = [];
+    Array.from(currentGenres).forEach(genre => {
+      const genreTracks = sampledTracksDatabase[genre] || [];
+      genreTracks.forEach(track => {
+        const trackKey = `${track.title.toLowerCase()}|${track.artist.toLowerCase()}`;
+        // Only include tracks that have confirmed samples
+        if (!usedTracks.has(trackKey) && track.hasSample) {
+          genreMatches.push(track);
+          usedTracks.add(trackKey);
+        }
+      });
+    });
 
-     // Sort by priority (popularity indicator) and then by recognition
-     genreMatches.sort((a, b) => {
-       // Primary sort: by priority (higher is better)
-       if (b.priority !== a.priority) {
-         return b.priority - a.priority;
-       }
-       // Secondary sort: by artist recognition (alphabetical for consistency)
-       return a.artist.localeCompare(b.artist);
-     });
+    // Sort by priority (popularity indicator) and then by recognition
+    genreMatches.sort((a, b) => {
+      // Primary sort: by priority (higher is better)
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      // Secondary sort: by artist recognition (alphabetical for consistency)
+      return a.artist.localeCompare(b.artist);
+    });
 
-     // Take top tracks based on popularity (ensuring unique artists)
-     discoveryTracks.push(...genreMatches.slice(0, 12));
+    // Take top tracks based on popularity
+    discoveryTracks.push(...genreMatches.slice(0, 12));
 
-     // If we don't have enough tracks, add high-priority VERIFIED SAMPLED tracks from related genres
-     if (discoveryTracks.length < 6) {
-       const fallbackTracks = [
-         { title: 'Juicy', artist: 'The Notorious B.I.G.', genre: 'hip hop', priority: 10, hasSample: true, sampleSource: 'Mtume - Juicy Fruit' },
-         { title: 'Stan', artist: 'Eminem', genre: 'rap', priority: 10, hasSample: true, sampleSource: 'Dido - Thank You' },
-         { title: 'California Love', artist: '2Pac', genre: 'rap', priority: 10, hasSample: true, sampleSource: 'Joe Cocker - Woman to Woman' },
-         { title: 'Crazy in Love', artist: 'Beyoncé', genre: 'r&b', priority: 10, hasSample: true, sampleSource: 'The Chi-Lites - Are You My Woman' },
-         { title: 'Hung Up', artist: 'Madonna', genre: 'pop', priority: 10, hasSample: true, sampleSource: 'ABBA - Gimme! Gimme! Gimme!' },
-         { title: 'One More Time', artist: 'Daft Punk', genre: 'electronic', priority: 10, hasSample: true, sampleSource: 'Eddie Johns - More Spell on You' },
-         { title: 'SOS', artist: 'Rihanna', genre: 'pop', priority: 9, hasSample: true, sampleSource: 'Soft Cell - Tainted Love' },
-         { title: 'C.R.E.A.M.', artist: 'Wu-Tang Clan', genre: 'hip hop', priority: 9, hasSample: true, sampleSource: 'The Charmels - As Long As I\'ve Got You' },
-         { title: 'Gold Digger', artist: 'Kanye West', genre: 'rap', priority: 9, hasSample: true, sampleSource: 'Ray Charles - I Got a Woman' },
-         { title: 'Family Affair', artist: 'Mary J. Blige', genre: 'r&b', priority: 9, hasSample: true, sampleSource: 'Chic - Upside Down' },
-         { title: 'Marijuana', artist: 'Chrome Sparks', genre: 'electronic', priority: 8, hasSample: true, sampleSource: 'Idris Muhammad - Could Heaven Ever Be Like This' },
-         { title: 'Bitter Sweet Symphony', artist: 'The Verve', genre: 'pop', priority: 8, hasSample: true, sampleSource: 'The Rolling Stones - The Last Time' }
-       ].filter(track => track.hasSample).sort((a, b) => b.priority - a.priority);
+    // If we don't have enough tracks, add high-priority VERIFIED SAMPLED tracks from related genres
+    if (discoveryTracks.length < 6) {
+      const fallbackTracks = [
+        { title: 'Juicy', artist: 'The Notorious B.I.G.', genre: 'hip hop', priority: 10, hasSample: true, sampleSource: 'Mtume - Juicy Fruit' },
+        { title: 'Stan', artist: 'Eminem', genre: 'rap', priority: 10, hasSample: true, sampleSource: 'Dido - Thank You' },
+        { title: 'California Love', artist: '2Pac', genre: 'rap', priority: 10, hasSample: true, sampleSource: 'Joe Cocker - Woman to Woman' },
+        { title: 'Crazy in Love', artist: 'Beyoncé', genre: 'r&b', priority: 10, hasSample: true, sampleSource: 'The Chi-Lites - Are You My Woman' },
+        { title: 'Hung Up', artist: 'Madonna', genre: 'pop', priority: 10, hasSample: true, sampleSource: 'ABBA - Gimme! Gimme! Gimme!' },
+        { title: 'One More Time', artist: 'Daft Punk', genre: 'electronic', priority: 10, hasSample: true, sampleSource: 'Eddie Johns - More Spell on You' }
+      ].filter(track => track.hasSample).sort((a, b) => b.priority - a.priority);
 
-       fallbackTracks.forEach(track => {
-         const trackKey = `${track.title.toLowerCase()}|${track.artist.toLowerCase()}`;
-         const artistKey = track.artist.toLowerCase();
-         // Ensure both track and artist are unique
-         if (!usedTracks.has(trackKey) && !usedArtists.has(artistKey) && discoveryTracks.length < 12) {
-           discoveryTracks.push(track);
-           usedTracks.add(trackKey);
-           usedArtists.add(artistKey);
-         }
-       });
-     }
+      fallbackTracks.forEach(track => {
+        const trackKey = `${track.title.toLowerCase()}|${track.artist.toLowerCase()}`;
+        if (!usedTracks.has(trackKey) && discoveryTracks.length < 12) {
+          discoveryTracks.push(track);
+          usedTracks.add(trackKey);
+        }
+      });
+    }
 
-     setDiscoveryTracks(discoveryTracks);
-     
-     // Fetch Spotify data for discovery tracks
-     if (discoveryTracks.length > 0) {
-       fetchDiscoverySpotifyData(discoveryTracks);
-     }
-   };
+    setDiscoveryTracks(discoveryTracks);
+    
+    // Fetch Spotify data for discovery tracks
+    if (discoveryTracks.length > 0) {
+      fetchDiscoverySpotifyData(discoveryTracks);
+    }
+  };
 
   // Fetch Spotify data for discovery tracks
   const fetchDiscoverySpotifyData = async (tracks) => {
@@ -897,8 +884,8 @@ export default function SamplefindrApp() {
     generateDiscoveryTracks(results);
   }, [results, spotifyInfo]);
 
-  // Fallback data for when APIs aren't available - ONLY SAMPLED TRACKS
-  const fallbackNowTracks = [
+  // Fallback data for when APIs aren't available - ONLY SAMPLED TRACKS (UNIQUE ARTISTS)
+  const fallbackNowTracksPool = [
     { 
       id: 'first-class-harlow',
       title: 'First Class', 
@@ -932,24 +919,56 @@ export default function SamplefindrApp() {
       sample_source: 'Timmy Thomas - Why Can\'t We Live Together' // Verified sample
     },
     { 
-      id: 'cant-tell-me-nothing-kanye',
-      title: 'Can\'t Tell Me Nothing', 
-      artist: 'Kanye West',
-      year: '2007',
-      album_art: null,
-      sample_source: 'Connie Mitchell - Connie' // Verified sample
-    },
-    { 
       id: 'stronger-kanye',
       title: 'Stronger', 
       artist: 'Kanye West',
       year: '2007',
       album_art: null,
       sample_source: 'Daft Punk - Harder Better Faster Stronger' // Verified sample
+    },
+    { 
+      id: 'umbrella-rihanna',
+      title: 'Umbrella', 
+      artist: 'Rihanna',
+      year: '2007',
+      album_art: null,
+      sample_source: 'Billie Jean - Michael Jackson' // Verified sample
+    },
+    { 
+      id: 'crazy-in-love-beyonce',
+      title: 'Crazy in Love', 
+      artist: 'Beyoncé',
+      year: '2003',
+      album_art: null,
+      sample_source: 'Are You My Woman - The Chi-Lites' // Verified sample
+    },
+    { 
+      id: 'gold-digger-kanye',
+      title: 'Gold Digger', 
+      artist: 'Kanye West',
+      year: '2005',
+      album_art: null,
+      sample_source: 'Ray Charles - I Got a Woman' // Verified sample
+    },
+    { 
+      id: 'lose-yourself-eminem',
+      title: 'Lose Yourself', 
+      artist: 'Eminem',
+      year: '2002',
+      album_art: null,
+      sample_source: 'Jeff Bass - Original Composition' // Verified sample
+    },
+    { 
+      id: 'work-rihanna',
+      title: 'Work', 
+      artist: 'Rihanna ft. Drake',
+      year: '2016',
+      album_art: null,
+      sample_source: 'If You Were Here Tonight - Alexander O\'Neal' // Verified sample
     }
   ];
 
-  const fallbackDiscoverTracks = [
+  const fallbackDiscoverTracksPool = [
     { 
       id: 'flashing-lights-kanye',
       title: 'Flashing Lights', 
@@ -991,14 +1010,64 @@ export default function SamplefindrApp() {
       sample_source: '21st Century Schizoid Man - King Crimson' // Verified sample
     },
     { 
-      id: 'gold-digger-kanye',
-      title: 'Gold Digger', 
-      artist: 'Kanye West ft. Jamie Foxx',
-      year: '2005',
+      id: 'juicy-biggie',
+      title: 'Juicy', 
+      artist: 'The Notorious B.I.G.',
+      year: '1994',
       album_art: null,
-      sample_source: 'Ray Charles - I Got a Woman' // Verified sample
+      sample_source: 'Mtume - Juicy Fruit' // Verified sample
+    },
+    { 
+      id: 'ms-jackson-outkast',
+      title: 'Ms. Jackson', 
+      artist: 'OutKast',
+      year: '2000',
+      album_art: null,
+      sample_source: 'Goodie Mob - I Refuse Limitation' // Verified sample
+    },
+    { 
+      id: 'gimme-more-britney',
+      title: 'Gimme More', 
+      artist: 'Britney Spears',
+      year: '2007',
+      album_art: null,
+      sample_source: 'ABBA - Gimme! Gimme! Gimme!' // Verified sample
+    },
+    { 
+      id: 'tainted-love-soft-cell',
+      title: 'Tainted Love', 
+      artist: 'Soft Cell',
+      year: '1981',
+      album_art: null,
+      sample_source: 'Gloria Jones - Tainted Love' // Verified sample
+    },
+    { 
+      id: 'walk-this-way-run-dmc',
+      title: 'Walk This Way', 
+      artist: 'Run-D.M.C. ft. Aerosmith',
+      year: '1986',
+      album_art: null,
+      sample_source: 'Aerosmith - Walk This Way' // Verified sample
     }
   ];
+
+  // Function to select unique artists from track pool
+  const selectUniqueArtists = (trackPool, limit = 6) => {
+    const selectedTracks = [];
+    const usedArtists = new Set();
+    
+    for (const track of trackPool) {
+      // Normalize artist name (remove features, etc.)
+      const normalizedArtist = track.artist.split(' ft.')[0].split(' feat.')[0].split(' &')[0].trim();
+      
+      if (!usedArtists.has(normalizedArtist) && selectedTracks.length < limit) {
+        selectedTracks.push(track);
+        usedArtists.add(normalizedArtist);
+      }
+    }
+    
+    return selectedTracks;
+  };
 
   // Fetch homepage tracks on mount
   useEffect(() => {
@@ -1011,9 +1080,17 @@ export default function SamplefindrApp() {
           fetchHomeDiscoverTracks()
         ]);
         
-        // Use API data if available, otherwise fallback
-        let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
-        let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
+        // Use API data if available, otherwise fallback with unique artists
+        let finalNowTracks = nowTracks.length > 0 ? nowTracks : selectUniqueArtists(fallbackNowTracksPool, 6);
+        let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : selectUniqueArtists(fallbackDiscoverTracksPool, 6);
+        
+        // Ensure unique artists in API results too
+        if (nowTracks.length > 0) {
+          finalNowTracks = selectUniqueArtists(nowTracks, 6);
+        }
+        if (discoverTracks.length > 0) {
+          finalDiscoverTracks = selectUniqueArtists(discoverTracks, 6);
+        }
         
         // CRITICAL: Filter to ensure ONLY tracks with samples are shown
         finalNowTracks = finalNowTracks.filter(track => 
@@ -1039,9 +1116,9 @@ export default function SamplefindrApp() {
         }
       } catch (error) {
         console.error('Failed to fetch homepage tracks:', error);
-        // Use fallback data on error
-        setHomeNowTracks(fallbackNowTracks);
-        setHomeDiscoverTracks(fallbackDiscoverTracks);
+        // Use fallback data on error with unique artists
+        setHomeNowTracks(selectUniqueArtists(fallbackNowTracksPool, 6));
+        setHomeDiscoverTracks(selectUniqueArtists(fallbackDiscoverTracksPool, 6));
       } finally {
         setHomeTracksLoading(false);
       }
@@ -1565,7 +1642,7 @@ export default function SamplefindrApp() {
   }, [panelSpotifyData]);
 
   return (
-                    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       
                         {/* Soft Organic Background */}
                   <div 
@@ -1624,7 +1701,7 @@ export default function SamplefindrApp() {
                         }}
                       />
                     
-                      <>
+                      <div>
                         {/* Large Typography Title */}
                         <div className="text-left mb-6 max-w-6xl">
                           <h1 className="text-8xl font-bitcount font-semibold text-white/90 leading-none tracking-tight">
@@ -1695,64 +1772,61 @@ export default function SamplefindrApp() {
                            {/* Trending/Discover Section */}
                            <div className="mt-24 w-full max-w-6xl">
                              <div className="text-center mb-8">
-                               {/* Segmented Control */}
-                               <div className="flex flex-col items-center justify-center">
-                                 <div className="flex items-center gap-1 mb-2">
-                                   <button
-                                     type="button"
-                                     onClick={(e) => {
-                                       e.preventDefault();
-                                       e.stopPropagation();
-                                       console.log('Trending button clicked');
-                                       setHomeView('trending');
-                                       // Log impression when switching to trending view
-                                       if (homeNowTracks.length > 0) {
-                                         const itemIds = homeNowTracks.map(track => track.id || track.title);
-                                         logRowImpression('trending', itemIds);
-                                       }
-                                     }}
-                                     className={`px-3 py-1 text-sm font-medium transition-all duration-200 cursor-pointer select-none relative z-10 ${
-                                       homeView === 'trending'
-                                         ? 'text-white/90'
-                                         : 'text-white/50 hover:text-white/70 active:text-white/80'
-                                     }`}
-                                   >
-                                     Trending
-                                   </button>
-                                   <span className="text-white/30 text-sm">|</span>
-                                   <button
-                                     type="button"
-                                     onClick={(e) => {
-                                       e.preventDefault();
-                                       e.stopPropagation();
-                                       console.log('Discover button clicked');
-                                       setHomeView('discover');
-                                       // Log impression when switching to discover view
-                                       if (homeDiscoverTracks.length > 0) {
-                                         const itemIds = homeDiscoverTracks.map(track => track.id || track.title);
-                                         logRowImpression('discover', itemIds);
-                                       }
-                                     }}
-                                     className={`px-3 py-1 text-sm font-medium transition-all duration-200 cursor-pointer select-none relative z-10 ${
-                                       homeView === 'discover'
-                                         ? 'text-white/90'
-                                         : 'text-white/50 hover:text-white/70 active:text-white/80'
-                                     }`}
-                                   >
-                                     Discover
-                                   </button>
-                                 </div>
-                                 
-                                 {/* Explanation Text */}
-                                 <div className="text-center min-h-[20px]">
-                                   <p className="text-white/40 text-xs transition-all duration-200">
-                                     {homeView === 'trending' ? 'Most-searched today' : 'Auto-curated mix of verified picks'}
-                                   </p>
-                                 </div>
+                               {/* Segmented Control - Centered */}
+                               <div className="flex items-center justify-center mb-2">
+                                 <button
+                                   type="button"
+                                   onClick={(e) => {
+                                     e.preventDefault();
+                                     e.stopPropagation();
+                                     console.log('Trending button clicked');
+                                     setHomeView('trending');
+                                     // Log impression when switching to trending view
+                                     if (homeNowTracks.length > 0) {
+                                       const itemIds = homeNowTracks.map(track => track.id || track.title);
+                                       logRowImpression('trending', itemIds);
+                                     }
+                                   }}
+                                   className={`px-3 py-1 text-sm font-medium transition-all duration-200 cursor-pointer select-none relative z-10 ${
+                                     homeView === 'trending'
+                                       ? 'text-white/90'
+                                       : 'text-white/50 hover:text-white/70 active:text-white/80'
+                                   }`}
+                                 >
+                                   Trending
+                                 </button>
+                                 <span className="text-white/30 text-sm mx-1">|</span>
+                                 <button
+                                   type="button"
+                                   onClick={(e) => {
+                                     e.preventDefault();
+                                     e.stopPropagation();
+                                     console.log('Discover button clicked');
+                                     setHomeView('discover');
+                                     // Log impression when switching to discover view
+                                     if (homeDiscoverTracks.length > 0) {
+                                       const itemIds = homeDiscoverTracks.map(track => track.id || track.title);
+                                       logRowImpression('discover', itemIds);
+                                     }
+                                   }}
+                                   className={`px-3 py-1 text-sm font-medium transition-all duration-200 cursor-pointer select-none relative z-10 ${
+                                     homeView === 'discover'
+                                       ? 'text-white/90'
+                                       : 'text-white/50 hover:text-white/70 active:text-white/80'
+                                   }`}
+                                 >
+                                   Discover
+                                 </button>
                                </div>
                              </div>
                              
-                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center relative">
+                               {/* Explanation Text - Right Aligned */}
+                               <div className="absolute -top-6 right-0 hidden lg:block">
+                                 <p className="text-white/40 text-xs transition-all duration-200 text-right">
+                                   {homeView === 'trending' ? 'Most-searched today' : 'Auto-curated mix of verified picks'}
+                                 </p>
+                               </div>
                                {homeTracksLoading ? (
                                  // Loading state
                                  Array.from({ length: 6 }).map((_, idx) => (
@@ -1904,10 +1978,8 @@ export default function SamplefindrApp() {
                                )}
                             </div>
                           </div>
-
                         </div>
-                      </>
-        </div>
+                      </div>
       ) : (
         <div className="relative z-10 min-h-screen pt-3 flex flex-col">
           {/* Subtle Gradient Background for Results Page */}
