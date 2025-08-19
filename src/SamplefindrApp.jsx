@@ -1293,6 +1293,9 @@ export default function SamplefindrApp() {
     e.preventDefault();
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
     
+    // Clear previous results immediately when starting a new search
+    setResults([]);
+    
     // Always clear the selected category when doing a new search
     setSelectedCategory(null);
     setShowSuggestions(false);
@@ -1980,7 +1983,7 @@ export default function SamplefindrApp() {
 
                                     </div>
                                     <div className="text-center">
-                                      <h4 className="text-white text-xs font-medium mb-1 line-clamp-2 leading-tight">
+                                      <h4 className="text-white text-xs font-normal font-novelDisplay mb-1 line-clamp-2 leading-tight">
                                          {track.title}
                                       </h4>
                                       <p className="text-white/60 text-xs line-clamp-1">
@@ -2130,7 +2133,7 @@ export default function SamplefindrApp() {
                               </svg>
                             </div>
                           </div>
-                          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-2">
+                          <h2 className="text-lg font-normal text-white mb-2">
                             Searching with AI...
                           </h2>
                           <p className="text-white/60 text-sm">
@@ -2155,7 +2158,7 @@ export default function SamplefindrApp() {
                               Search results for
                             </h1>
                             <h2 className="text-5xl md:text-6xl font-bold text-white">
-                              "{query}"
+                              "{completedQuery}"
                             </h2>
                           </div>
                           
@@ -2174,7 +2177,7 @@ export default function SamplefindrApp() {
                           
                           {/* Artists Preview */}
                           <div className="mb-12">
-                            <h3 className="text-xl font-bold text-white mb-6">
+                            <h3 className="text-xl font-normal text-white mb-6">
                               Other artists
                             </h3>
                             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60 leading-relaxed">
@@ -2197,10 +2200,13 @@ export default function SamplefindrApp() {
                             </div>
                           </div>
 
+                          {/* Horizontal line */}
+                          <div className="h-px bg-white/10 w-full mb-8"></div>
+                          
                           {/* Discover Section - Popular Sampled Tracks */}
                           <div className="mb-8">
                             <div className="flex items-center justify-between mb-6">
-                              <h4 className="text-white/85 text-lg font-semibold">
+                              <h4 className="text-xl font-normal text-white">
                                 Popular sampled tracks you might like
                               </h4>
                               <span className="text-white/30 text-xs ml-1">
@@ -2301,7 +2307,7 @@ export default function SamplefindrApp() {
                                     </div>
                                   </div>
                                   <div className="w-[92%] mx-auto">
-                                    <h3 className="text-white text-base font-semibold mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
+                                    <h3 className="text-white text-base font-normal font-novelDisplay mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
                                       {track.title}
                                     </h3>
                                     <p className="text-white/70 text-xs line-clamp-1 transition-colors duration-200 group-hover:text-white/80">
@@ -2363,14 +2369,11 @@ export default function SamplefindrApp() {
                           {/* Simple Track Header */}
                           <div className="mb-12">
               <div className="flex items-center gap-3 mb-2">
-                              <h1 className={`text-2xl md:text-3xl font-bold text-white ${((spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title || '').toLowerCase().includes('why i love you') ? 'font-libreCaslon' : 'font-notoSerif'}`}>
+                              <h1 className="text-2xl md:text-3xl font-novelDisplay font-normal text-white">
                                 {(spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title}
                               </h1>
                               {item?.isApiResult && (
-                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border border-blue-500/30 rounded-full">
-                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                  </svg>
+                                <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-gradient-to-r from-blue-500/20 via-blue-400/20 to-blue-600/20 text-blue-300 rounded-full shadow-lg shadow-blue-500/10 backdrop-blur-sm">
                                   AI Identified
                                 </span>
                               )}
@@ -2389,7 +2392,7 @@ export default function SamplefindrApp() {
                               </p>
                             )}
                             {item?.apiNote && !item?.sampledFrom && (
-                              <p className="text-sm text-white/40 mt-2 italic">
+                              <p className="text-sm text-white/40 mt-2">
                                 {item?.apiNote}
                               </p>
                             )}
@@ -2414,7 +2417,7 @@ export default function SamplefindrApp() {
                               {/* Section Header */}
             <div>
                                 <div className="mb-4">
-                                  <h2 className="text-lg font-bold text-white relative">
+                                  <h2 className="text-lg font-normal text-white relative">
                                     Track
                                     <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 rounded-full opacity-80"></div>
                                   </h2>
@@ -2473,7 +2476,7 @@ export default function SamplefindrApp() {
                                   image: (spotifyInfo[`${item?.title}|${item?.artist}`]?.coverUrl) || item?.thumbnail,
                                   description: 'Artist and album details will appear here. Placeholder content.'
                                 })}>
-                                  <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title}</h3>
+                                  <h3 className="text-xl font-normal text-white font-novelDisplay">{(spotifyInfo[`${item?.title}|${item?.artist}`]?.title) || item?.title}</h3>
                                   <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item?.title}|${item?.artist}`]?.artists) || item?.artist}</p>
                                   <p className="text-sm text-gray-500">{(spotifyInfo[`${item?.title}|${item?.artist}`]?.year) || item?.year}</p>
                                   
@@ -2499,7 +2502,7 @@ export default function SamplefindrApp() {
                               {/* Section Header */}
             <div>
                                 <div className="mb-4">
-                                  <h2 className="text-lg font-bold text-white relative">
+                                  <h2 className="text-lg font-normal text-white relative">
                                     Sampled From
                                     <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-cyan-400 via-blue-400 to-blue-600 rounded-full opacity-80"></div>
                                   </h2>
@@ -2558,7 +2561,7 @@ export default function SamplefindrApp() {
                                   image: (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.coverUrl) || item?.sampledFrom?.thumbnail,
                                   description: 'Source artist and album details will appear here. Placeholder content.'
                                 })}>
-                                                                     <h3 className="text-xl font-bold text-white font-notoSerif">{(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.title) || item?.sampledFrom?.title}</h3>
+                                                                     <h3 className="text-xl font-normal text-white font-novelDisplay">{(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.title) || item?.sampledFrom?.title}</h3>
                                    <p className="text-base text-gray-300">{safeJoinArtists(spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.artists) || item?.sampledFrom?.artist}</p>
                                    <p className="text-sm text-gray-500">{getCorrectedYear(item?.sampledFrom?.title, item?.sampledFrom?.artist, (spotifyInfo[`${item?.sampledFrom?.title}|${item?.sampledFrom?.artist}`]?.year) || item?.sampledFrom?.year)}</p>
                                   
@@ -2600,7 +2603,7 @@ export default function SamplefindrApp() {
                             {/* Left Side - Sampled Song Video */}
                             <div className="relative group">
                                             <div className="absolute -top-8 left-0">
-                <span className="text-sm font-bold text-white">
+                <span className="text-lg font-normal text-white">
                   Play & Compare
                 </span>
               </div>
@@ -2743,7 +2746,7 @@ export default function SamplefindrApp() {
                           <div className="max-w-[90rem] mx-auto px-6">
                             <div className="h-px bg-white/5 mb-8"></div>
                             <div className="flex items-center justify-between mb-6">
-                              <h4 className="text-white/85 text-lg font-semibold">
+                              <h4 className="text-white/85 text-lg font-normal">
                                 {(() => {
                                   // Get genres from current search results
                                   const currentGenres = new Set();
@@ -2810,7 +2813,7 @@ export default function SamplefindrApp() {
                                   )}
                                 </div>
                                 <div className="w-[92%] mx-auto">
-                                <h3 className="text-white text-base font-semibold mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
+                                <h3 className="text-white text-base font-normal font-novelDisplay mb-1 line-clamp-2 leading-tight transition-colors duration-200 group-hover:text-white/90">
                                     {spotifyInfo[`${track.title}|${track.artist}`]?.title || track.title}
                                 </h3>
                                 <p className="text-white/70 text-xs line-clamp-1 transition-colors duration-200 group-hover:text-white/80">

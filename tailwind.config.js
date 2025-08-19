@@ -10,6 +10,9 @@ export default {
         notoSerif: ['"Noto Serif"', 'serif'],
         jost: ['"Jost"', 'sans-serif'],
         libreCaslon: ['"Libre Caslon Text"', 'serif'],
+        brandonGrotesque: ['"brandon-grotesque"', 'sans-serif'],
+        novelDisplay: ['"novel-display"', 'sans-serif'],
+        helveticaNeueLTPro: ['"helvetica-neue-lt-pro"', 'sans-serif'],
       },
       animation: {
         'textGlow': 'textGlow 5s ease-in-out infinite',
