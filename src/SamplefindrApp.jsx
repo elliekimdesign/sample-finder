@@ -1726,11 +1726,6 @@ export default function SamplefindrApp() {
                               </div>
                             )}
                           </form>
-                          
-                          {/* Search suggestion text */}
-                          <p className="text-white/40 text-xs text-center mt-3">
-                            Start with a song. Try 'One More Time'.
-                          </p>
 
 
 
