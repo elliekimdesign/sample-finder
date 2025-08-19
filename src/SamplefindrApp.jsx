@@ -112,41 +112,47 @@ export default function SamplefindrApp() {
   }
 
   // Homepage API fetching functions - MUST RETURN ONLY SAMPLED TRACKS
-  const fetchHomeNowTracks = async () => {
-    try {
-      // API should only return tracks that contain verified samples
-      const response = await fetch('/api/home-now?limit=6&samples_only=true');
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to ensure all returned tracks have samples (double-check)
-        const sampledTracks = (data.tracks || []).filter(track => 
-          track.sample_source || track.has_sample || track.verified_sample
-        );
-        return sampledTracks;
-      }
-    } catch (error) {
-      console.error('Failed to fetch home-now tracks:', error);
-    }
-    return [];
-  };
+     const fetchHomeNowTracks = async () => {
+     try {
+       // API should only return tracks that contain verified samples
+       const response = await fetch('/api/home-now?limit=6&samples_only=true');
+       if (response.ok) {
+         const data = await response.json();
+         // STRICT FILTER: Only tracks with clear "Sampled From" relationships
+         const sampledTracks = (data.tracks || []).filter(track => {
+           const hasSample = track.sample_source || track.has_sample || track.verified_sample;
+           const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
+           // Don't show tracks without clear sample relationships
+           return hasSample && hasValidSampleSource;
+         });
+         return sampledTracks;
+       }
+     } catch (error) {
+       console.error('Failed to fetch home-now tracks:', error);
+     }
+     return [];
+   };
 
-  const fetchHomeDiscoverTracks = async () => {
-    try {
-      // API should only return tracks that contain verified samples
-      const response = await fetch('/api/home-discover?limit=6&samples_only=true');
-      if (response.ok) {
-        const data = await response.json();
-        // Filter to ensure all returned tracks have samples (double-check)
-        const sampledTracks = (data.tracks || []).filter(track => 
-          track.sample_source || track.has_sample || track.verified_sample
-        );
-        return sampledTracks;
-      }
-    } catch (error) {
-      console.error('Failed to fetch home-discover tracks:', error);
-    }
-    return [];
-  };
+   const fetchHomeDiscoverTracks = async () => {
+     try {
+       // API should only return tracks that contain verified samples
+       const response = await fetch('/api/home-discover?limit=6&samples_only=true');
+       if (response.ok) {
+         const data = await response.json();
+         // STRICT FILTER: Only tracks with clear "Sampled From" relationships
+         const sampledTracks = (data.tracks || []).filter(track => {
+           const hasSample = track.sample_source || track.has_sample || track.verified_sample;
+           const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
+           // Don't show tracks without clear sample relationships
+           return hasSample && hasValidSampleSource;
+         });
+         return sampledTracks;
+       }
+     } catch (error) {
+       console.error('Failed to fetch home-discover tracks:', error);
+     }
+     return [];
+   };
 
   // Fetch album art for homepage tracks
   const fetchHomeAlbumArt = async (tracks) => {
@@ -1017,13 +1023,19 @@ export default function SamplefindrApp() {
          let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
          let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
          
-         // CRITICAL: Filter to ensure ONLY tracks with samples are shown
-         finalNowTracks = finalNowTracks.filter(track => 
-           track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
-         );
-         finalDiscoverTracks = finalDiscoverTracks.filter(track => 
-           track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom
-         );
+         // CRITICAL: Filter to ensure ONLY tracks with verified "Sampled From" relationships are shown
+         finalNowTracks = finalNowTracks.filter(track => {
+           // Must have a clear sample source - if no sample relationship, don't show
+           const hasSample = track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom;
+           const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
+           return hasSample && hasValidSampleSource;
+         });
+         finalDiscoverTracks = finalDiscoverTracks.filter(track => {
+           // Must have a clear sample source - if no sample relationship, don't show
+           const hasSample = track.sample_source || track.has_sample || track.verified_sample || track.sampledFrom;
+           const hasValidSampleSource = track.sample_source && track.sample_source.trim() !== '';
+           return hasSample && hasValidSampleSource;
+         });
          
          // ENSURE UNIQUE ARTISTS across both Trending and Discover sections
          const usedArtists = new Set();
@@ -1788,7 +1800,13 @@ export default function SamplefindrApp() {
                                    </div>
                                  ))
                                ) : (homeView === 'trending' ? homeNowTracks : homeDiscoverTracks).length > 0 ? (
-                                 (homeView === 'trending' ? homeNowTracks : homeDiscoverTracks).map((track, idx) => {
+                                 (homeView === 'trending' ? homeNowTracks : homeDiscoverTracks)
+                                   .filter(track => {
+                                     // FINAL SAFETY CHECK: Only show tracks with verified sample sources
+                                     const hasValidSample = track.sample_source && track.sample_source.trim() !== '';
+                                     return hasValidSample;
+                                   })
+                                   .map((track, idx) => {
                                 
                                 return (
                                   <div 
