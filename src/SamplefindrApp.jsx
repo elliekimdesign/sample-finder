@@ -1693,7 +1693,7 @@ export default function SamplefindrApp() {
                               <div className="relative flex-1 flex items-center bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 group-hover:border-white/20 group-focus-within:border-white/25 group-focus-within:bg-white/6 transition-all duration-500">
         <input
           type="text"
-                                  placeholder="Search for any song..."
+                                  placeholder="Type a song title..."
           value={query}
           onChange={handleInputChange}
           onFocus={() => query.length >= 2 && setShowSuggestions(true)}
@@ -1726,6 +1726,11 @@ export default function SamplefindrApp() {
                               </div>
                             )}
                           </form>
+                          
+                          {/* Search suggestion text */}
+                          <p className="text-white/40 text-xs text-center mt-3">
+                            Start with a song. Try 'One More Time'.
+                          </p>
 
 
 
@@ -2035,7 +2040,7 @@ export default function SamplefindrApp() {
                               <div className="relative flex-1 flex items-center bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 group-hover:border-white/20 group-focus-within:border-white/25 group-focus-within:bg-white/6 transition-all duration-500">
                                 <input
                                   type="text"
-                                  placeholder="Search songs..."
+                                  placeholder="Type a song title..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
                                   className="flex-1 px-4 py-2.5 bg-transparent text-white text-sm font-inter font-light placeholder-white/40 focus:outline-none focus:placeholder-white/60 transition-all duration-300"
