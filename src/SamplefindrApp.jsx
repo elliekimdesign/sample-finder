@@ -1177,6 +1177,10 @@ export default function SamplefindrApp() {
          let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
          let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
          
+         console.log('🔍 Debug - API tracks:', { nowTracks: nowTracks.length, discoverTracks: discoverTracks.length });
+         console.log('🔍 Debug - Fallback tracks:', { fallbackNow: fallbackNowTracks.length, fallbackDiscover: fallbackDiscoverTracks.length });
+         console.log('🔍 Debug - Final tracks before filtering:', { finalNow: finalNowTracks.length, finalDiscover: finalDiscoverTracks.length });
+         
          // CRITICAL: Filter to ensure ONLY tracks with verified "Sampled From" relationships are shown
          // Enhanced filtering with strict sample validation
          finalNowTracks = finalNowTracks.filter(track => {
@@ -1198,6 +1202,8 @@ export default function SamplefindrApp() {
            // STRICT: Must have sample source AND high confidence (if confidence is provided)
            return hasSample && hasValidSampleSource && hasHighConfidence;
          });
+         
+         console.log('🔍 Debug - After sample filtering:', { finalNow: finalNowTracks.length, finalDiscover: finalDiscoverTracks.length });
          
          // Additional validation: If we have very few tracks, validate some with the samples API
          if (finalNowTracks.length < 3 || finalDiscoverTracks.length < 3) {
@@ -1227,6 +1233,8 @@ export default function SamplefindrApp() {
            usedArtists.add(artistKey);
            return true;
          });
+         
+         console.log('🔍 Debug - After unique artist filtering:', { finalNow: finalNowTracks.length, finalDiscover: finalDiscoverTracks.length });
         
         setHomeNowTracks(finalNowTracks);
         setHomeDiscoverTracks(finalDiscoverTracks);
