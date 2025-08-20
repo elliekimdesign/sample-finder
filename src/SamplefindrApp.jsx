@@ -1174,8 +1174,9 @@ export default function SamplefindrApp() {
         ]);
         
                  // Use API data if available, otherwise fallback
-         let finalNowTracks = nowTracks.length > 0 ? nowTracks : fallbackNowTracks;
-         let finalDiscoverTracks = discoverTracks.length > 0 ? discoverTracks : fallbackDiscoverTracks;
+         // Temporarily force fallback data until API endpoints are deployed
+         let finalNowTracks = fallbackNowTracks;
+         let finalDiscoverTracks = fallbackDiscoverTracks;
          
          console.log('🔍 Debug - API tracks:', { nowTracks: nowTracks.length, discoverTracks: discoverTracks.length });
          console.log('🔍 Debug - Fallback tracks:', { fallbackNow: fallbackNowTracks.length, fallbackDiscover: fallbackDiscoverTracks.length });
